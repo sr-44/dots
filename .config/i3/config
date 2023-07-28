@@ -190,3 +190,4 @@ for_window [class="Telegram"] border pixel 0
 gaps inner 5
 smart_gaps on
 default_border pixel 2
+
