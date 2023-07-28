@@ -22,6 +22,7 @@ bindsym Print exec --no-startup-id flameshot screen --clipboard
 bindsym $mod+x exec --no-startup-id "$HOME/.config/i3/scripts/lock.sh"
 exec --no-startup-id alacritty
 exec_always --no-startup-id ibus-daemon
+exec --no-startup-id dunst -config ~/.config/dunst/dunstrc
 # ---------------------------------------------------------- #
 
 # Polybar
