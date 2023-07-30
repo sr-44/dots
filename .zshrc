@@ -14,7 +14,7 @@ source $ZSH/oh-my-zsh.sh
 alias :c="clear"
 alias nv="nvim"
 alias nf="neofetch"
-alias conf="cd ~/dots/.config"
+alias dots="cd ~/dots/"
 alias :wq="exit"
 alias :xz="poweroff"
 alias slp="systemctl suspend"
