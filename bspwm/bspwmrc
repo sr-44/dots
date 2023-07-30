@@ -18,13 +18,13 @@ bspc config gapless_monocle      true
 bspc rule -a TelegramDesktop desktop='^2'
 
 
-nitrogen --restore
-mn-applet
-xsetroot -cursor_name left_ptr
+nitrogen --restore &
+nm-applet &
+xsetroot -cursor_name left_ptr &
 flameshot &
 dunst &
 picom -b &
 udiskie &
-$HOME/.config/polybar/launch.sh
+$HOME/.config/polybar/launch.sh &
 xautolock $HOME/.config/sxhkd/scripts/lock.sh
 #~/dotfiles/scripts/fullscreen &
