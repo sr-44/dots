@@ -19,6 +19,7 @@ bspc rule -a TelegramDesktop desktop='^2'
 
 
 nitrogen --restore
+mn-applet
 xsetroot -cursor_name left_ptr
 flameshot &
 dunst &
