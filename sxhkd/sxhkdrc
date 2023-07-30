@@ -15,7 +15,7 @@ super + Escape
     pkill -USR1 -x sxhkd
 
 super + x
-    $HOME/.config/sxhkd/scripts/lock.sh
+    ~/.config/sxhkd/scripts/lock.sh
 
 super + Print
     flameshot gui
@@ -60,10 +60,6 @@ super + shift + {q,r}
 # close and kill
 super + BackSpace
     bspc node -{c,k}
-
-# alternate between the tiled and monocle layout
-super + f
-    bspc desktop -l next
 
 # send the newest marked node to the newest preselected node
 super + y
