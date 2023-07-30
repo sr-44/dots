@@ -1,4 +1,4 @@
-![alt text](https://github.com/sr-44/dots/screenshots/bspwm.png)
+![alt text](https://github.com/sr-44/dots/blob/master/screenshots/bspwm.png)
 
 ## Things Used
 
