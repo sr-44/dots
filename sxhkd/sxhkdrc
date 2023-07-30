@@ -15,7 +15,7 @@ super + Escape
     pkill -USR1 -x sxhkd
 
 super + x
-    xautolock $HOME/.config/sxhkd/scripts/lock.sh
+    $HOME/.config/sxhkd/scripts/lock.sh
 
 super + Print
     flameshot gui
