@@ -26,6 +26,6 @@ flameshot &
 dunst &
 picom -b &
 udiskie &
-$HOME/.config/polybar/launch.sh &
-xautolock $HOME/.config/sxhkd/scripts/lock.sh
+~/.config/polybar/launch.sh &
+xautolock ~/.config/sxhkd/scripts/lock.sh
 #~/dotfiles/scripts/fullscreen &
