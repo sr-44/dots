@@ -27,5 +27,4 @@ dunst &
 picom -b &
 udiskie &
 ~/.config/polybar/launch.sh &
-xautolock ~/.config/sxhkd/scripts/lock.sh
-#~/dotfiles/scripts/fullscreen &
+xautolock -time 15 -locker "$HOME/.config/sxhkd/scripts/lock.sh"
