@@ -25,6 +25,5 @@ setxkbmap -model pc105 -layout us,ru -option grp:win_space_toggle &
 flameshot &
 dunst &
 picom -b &
-udiskie &
 ~/.config/polybar/launch.sh &
 xautolock -time 15 -locker "$HOME/.config/sxhkd/scripts/lock.sh"
