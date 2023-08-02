@@ -26,4 +26,5 @@ flameshot &
 dunst &
 picom -b &
 ~/.config/polybar/launch.sh &
-xautolock -time 15 -locker "$HOME/.config/sxhkd/scripts/lock.sh"
+#xautolock -time 15 -locker "$HOME/.config/sxhkd/scripts/lock.sh"
+xss-lock --transfer-sleep-lock -- bash ~/.config/sxhkd/scripts/lock.sh
