@@ -21,7 +21,6 @@ bspc rule -a TelegramDesktop desktop='^2'
 nitrogen --restore &
 nm-applet &
 xsetroot -cursor_name left_ptr &
-#setxkbmap -model pc105 -layout us,ru -option grp:win_space_toggle &
 flameshot &
 dunst &
 picom -b &
