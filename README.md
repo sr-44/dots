@@ -4,7 +4,7 @@
 
 - **Distro**: [Arch](https://wiki.archlinux.org/)
 - **Bar**: [polybar](https://github.com/polybar/polybar)
-- **Shell**: [zsh](https://https://www.zsh.org/)
+- **Shell**: [zsh](https://www.zsh.org/)
 - **Terminal**: [alacritty](https://alacritty.org/)
 - **IDE**: [Neovim](https://neovim.io/)
 - **File Manager**: [Ranger](https://github.com/ranger/ranger)
