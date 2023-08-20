@@ -151,15 +151,6 @@ super + alt + shift + {h,j,k,l}
 super + {Left,Down,Up,Right}
     bspc node -v {-30 0,0 30,0 -30,30 0}
 
-# screenshot
-Print
-    ~/dotfiles/scripts/sshot -m select
-
-super + Print
-    ~/dotfiles/scripts/sshot -m win
-
-shift + Print
-    ~/dotfiles/scripts/sshot -m full
 
 # send win to next or prev desktop & focus it
 alt + ctrl + shift + { Right,Left }
@@ -176,21 +167,6 @@ alt + ctrl + shift + { Right,Left }
 #      bspc rule -a org.wezfurlong.wezterm -o state=floating follow=on center=true && wezterm start -- "ncmpcpp", \
 #      ~/dotfiles/scripts/screenkey
 #    }
-
-# move the floating focused window to center
-super + ctrl + c
-    ~/dotfiles/scripts/tocenter
-
-# powermenu
-ctrl + super + alt + p
-    eww open powermenu
-
-# hide/show bar
-super + ctrl + t
-    eww open-many --toggle bar
-
-super + ctrl + r
-    ~/dotfiles/eww/toggle_bar
 
 
 # make split ratios equal
