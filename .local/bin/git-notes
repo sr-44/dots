@@ -28,6 +28,7 @@ encrypt_files_recursive() {
 
 }
 
+
 encrypt_files_recursive "$source_dir" "$encrypted_dir"
 find "$encrypted_dir" -type f ! -name "*.asc" ! -path "$encrypted_dir/.git/*" -delete
 
