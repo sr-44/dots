@@ -7,7 +7,6 @@ source_dir="$HOME/Documents/notes"
 encrypted_dir="$HOME/Documents/encrypted_notes"
 
 cp -r "$source_dir"/* "$encrypted_dir"
-    
 
 encrypt_files_recursive() {
     local source_dir="$1"
@@ -20,7 +19,11 @@ encrypt_files_recursive() {
     # Шифруем файлы
     find "$source_dir" -type f ! -name ".*" -print0 | while IFS= read -r -d '' file; do
         rel_path="${file#$source_dir}"
-        gpg --output "$encrypted_dir/$rel_path.asc" --encrypt -a --recipient mail.sr.44@gmail.com "$file"
+        if [[ $rel_path != .* ]]; then
+            if [[ $file != *"/."* ]]; then
+                gpg --output "$encrypted_dir/$rel_path.asc" --encrypt -a --recipient mail.sr.44@gmail.com --yes "$file"
+            fi
+        fi
     done
 
 }
