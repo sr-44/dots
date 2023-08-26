@@ -69,4 +69,4 @@ ___MY_VMOPTIONS_SHELL_FILE="${HOME}/.jetbrains.vmoptions.sh"; if [ -f "${___MY_V
 #export GTK_IM_MODULE=ibus
 #export QT_IM_MODULE=ibus
 #export XMODIFIERS=@im=ibus
-export PATH=$PATH:/home/ar4sh/.config/composer/vendor/bin
+export PATH=$PATH:/home/ar4sh/.local/bin/:/home/ar4sh/.config/composer/vendor/bin
