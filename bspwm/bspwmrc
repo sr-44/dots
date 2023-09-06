@@ -15,9 +15,6 @@ bspc config borderless_monocle   true
 bspc config gapless_monocle      true
 
 
-bspc rule -a TelegramDesktop desktop='^2'
-
-
 nitrogen --restore &
 nm-applet &
 xsetroot -cursor_name left_ptr &
