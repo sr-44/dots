@@ -1,82 +1,53 @@
+## Copyright (C) 2020-2023 Aditya Shakya <adi1090x@gmail.com>
+##
+## Configuration for Alacritty, the GPU enhanced terminal emulator.
+## It's a very basic and simple config file, for full configuration...
+## See, /usr/share/doc/alacritty/example/alacritty.yml
+
+## Import files (Colors, Fonts, Etc)
+import:
+  - ~/dots/alacritty/colors.yml
+  - ~/dots/alacritty/fonts.yml
+
+## Set environment variables
 env:
-  TERM: xterm-256color
+  TERM: alacritty
+  WINIT_X11_SCALE_FACTOR: '1.0'
 
-shell:
-  program: /usr/bin/zsh
-
+## Terminal window settings
 window:
+  dimensions:
+    columns: 82
+    lines: 23
+
   padding:
-    x: 0
-    y: 0
-  dynamic_padding: false
-  class:
-    instance: Alacritty
-    general: Alacritty
-    opacity: 0.8
+    x: 10
+    y: 10
 
+  decorations: full
+  startup_mode: Windowed
+  dynamic_title: true
 
-dynamic_title: false
-
-scrolling:
-  history: 500
+## scrolling
+  history: 10000
   multiplier: 3
 
-font:
-  normal:
-    family: "Jetbrains Mono"
-    style: Bold
-  bold:
-    family: "Jetbrains Mono"
-    style: Bold
-  italic:
-    family: "Jetbrains Mono"
-    style: Italic
-  bold_italic:
-    family: "Jetbrains Mono"
-    style: Bold Italic
-  size: 9
+## Background opacity
+  opacity: 1.0
 
-draw_bold_text_with_bright_colors: true
-
-colors:
-  primary:
-    background: "#12121f"
-    foreground: "#d4d7ff"
-  normal:
-    black: "#222236"
-    red: "#d95177"
-    green: "#78dca7"
-    yellow: "#fcf39c"
-    blue: "#759eea"
-    cyan: "#6be5e3"
-    magenta: "#8783d9"
-    white: "#e4e7ff"
-  bright:
-    black: "#29293f"
-    red: "#d54c73"
-    green: "#7bdba6"
-    yellow: "#fcf295"
-    blue: "#6d98e8"
-    cyan: "#65dedc"
-    magenta: "#837dd7"
-    white: "#f4f7ff"
-  dim:
-    black:  "#12121f"
-    red: "#df4e75"
-    green: "#84e5ac"
-    yellow: "#fcf4a2"
-    blue: "#7ea4ec"
-    cyan: "#72e7e5"
-    magenta: "#908cdb"
-    white: "#d4d7ff"
-
+## Cursor
 cursor:
-  style: Block
+  style:
+    shape: Block
+    blinking: On
 
-selection:
-  save_to_clipboard: false
+  unfocused_hollow: false
 
-key_bindings:
-  - { key: V,        mods: Control|Shift, action: Paste            }
-  - { key: C,        mods: Control|Shift, action: Copy             }
-  - { key: Insert,   mods: Shift,         action: PasteSelection   }
+## Live config reload
+live_config_reload: true
+
+## Shell
+#shell:
+#  program: /bin/zsh
+#  args:
+#    - --login
