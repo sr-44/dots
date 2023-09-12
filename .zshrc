@@ -21,7 +21,7 @@ alias slp="systemctl suspend"
 alias out="pkill -KILL -u $(whoami)"
 alias wflist="nmcli device wifi list"
 alias wfconnect="nmcli -ask device wifi connect"
-
+alias pa="php artisan"
 
 # functions
 function proxy_on() {
