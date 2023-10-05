@@ -12,6 +12,7 @@ source $ZSH/oh-my-zsh.sh
 
 # aliases
 alias :c="clear"
+alias :C="clear"
 alias nv="nvim"
 alias nf="neofetch"
 alias dots="cd ~/dots/"
