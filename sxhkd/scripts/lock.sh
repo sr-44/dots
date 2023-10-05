@@ -8,6 +8,7 @@ WRONG='#e84a74'
 VERIFYING='#7bdba6'
 
 i3lock \
+--keylayout 2 \
 --insidever-color=$CLEAR     \
 --ringver-color=$VERIFYING   \
 \
