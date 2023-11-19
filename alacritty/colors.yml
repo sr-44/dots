@@ -2,7 +2,7 @@
 
 colors:
   primary:
-    background: "#12121f"
+    background: "#000000"
     foreground: "#d4d7ff"
   normal:
     black: "#222236"
