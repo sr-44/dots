@@ -39,14 +39,14 @@
 
     frame_width = 3
     frame_color = "#29293f"
-
+    background = "#000000"
     gap_size = 5
 
     separator_color = frame
 
     # Sort messages by urgency.
     sort = yes
- 
+
 
     ### Text ###
     font = ShureTechMono Nerd Font 11
@@ -200,21 +200,21 @@
 [urgency_low]
     # IMPORTANT: colors have to be defined in quotation marks.
     # Otherwise the "#" and following would be interpreted as a comment.
-    background = "#12121f"
+    background = "#00000"
     foreground = "#d4d7ff"
     timeout = 10
     # Icon for notifications with low urgency, uncomment to enable
     #default_icon = /path/to/icon
 
 [urgency_normal]
-    background = "#12121f"
+    background = "#000000"
     foreground = "#d4d7ff"
     timeout = 10
     # Icon for notifications with normal urgency, uncomment to enable
     #default_icon = /path/to/icon
 
 [urgency_critical]
-    background = "#12121f"
+    background = "#00000"
     foreground = "#d95177"
     frame_color = "#d95177"
     timeout = 0
