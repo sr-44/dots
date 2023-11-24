@@ -23,6 +23,9 @@ alias out="pkill -KILL -u $(whoami)"
 alias wflist="nmcli device wifi list"
 alias wfconnect="nmcli -ask device wifi connect"
 alias c="gcc -std=c99 -fdiagnostics-color=always"
+alias sail='[ -f sail ] && bash sail || bash vendor/bin/sail'
+
+
 # functions
 function proxy_on() {
     export no_proxy="localhost,127.0.0.1,localaddress,.loc"
