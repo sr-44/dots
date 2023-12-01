@@ -1,6 +1,6 @@
 * {
-	bg0: #3A3A3A;
-	bg1: #000000;
+	bg0: #3A3A3A55;
+	bg1: #00000055;
 	bg2: #000000;
 
 	fg0: #d4d7ff;
@@ -30,24 +30,26 @@ element-icon, element-text, scrollbar {
 }
 
 window {
-	location: center;
-	width: 400px;
-	height: 445px;
+	transparency: "real";
+	fullscreen: false;
+	location: north;
+	width: 500px;
+	height: 250px;
 	x-offset: 4px;
 	y-offset: 26px;
 
 	background-color: @bg1;
-	border: 2px;
+	border: 1px;
 	border-color: @bg2;
 	border-radius: 12px;
 }
 
 inputbar {
 	spacing: 8px;
-	padding: 4px 8px;
+	padding: 16px 10px;
 	children: [ icon-search, entry ];
 
-	border-radius: 12px;
+	border-radius: 20px;
 	background-color: @bg0;
 }
 
@@ -76,7 +78,7 @@ listview {
 }
 
 element {
-	padding: 4px 8px;
+	padding: 10px 15px;
 	spacing: 8px;
 	radius: 15px;
 }
@@ -99,7 +101,7 @@ element selected urgent {
 }
 
 element-icon {
-	size: 0.8em;
+	size: 1.5em;
 }
 
 element-text {
