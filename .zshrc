@@ -24,7 +24,10 @@ alias wflist="nmcli device wifi list"
 alias wfconnect="nmcli -ask device wifi connect"
 alias c="gcc -std=c99 -fdiagnostics-color=always"
 alias sail='[ -f sail ] && bash sail || bash vendor/bin/sail'
-
+alias dstart="sudo systemctl start docker"
+alias dstop="sudo systemctl stop docker.service docker.socket"
+alias phpstart="sudo systemctl start php-fpm nginx mariadb"
+alias phpstop="sudo systemctl stop php-fpm nginx mariadb"
 
 # functions
 function proxy_on() {
