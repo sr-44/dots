@@ -6,7 +6,7 @@ ZSH_THEME="robbyrussell"
 
 ENABLE_CORRECTION="false"
 
-plugins=(git zsh-syntax-highlighting tmux artisan)
+plugins=(git zsh-syntax-highlighting tmux)
 source $ZSH/oh-my-zsh.sh
 
 
@@ -15,6 +15,7 @@ alias :c="clear"
 alias :C="clear"
 alias nv="nvim"
 alias nf="neofetch"
+alias y="yazi"
 alias dots="cd ~/dots/"
 alias :wq="exit"
 alias :off="poweroff"
@@ -70,9 +71,4 @@ function proxy_off() {
 }
 
 
-___MY_VMOPTIONS_SHELL_FILE="${HOME}/.jetbrains.vmoptions.sh"; if [ -f "${___MY_VMOPTIONS_SHELL_FILE}" ]; then . "${___MY_VMOPTIONS_SHELL_FILE}"; fi
-
-#export GTK_IM_MODULE=ibus
-#export QT_IM_MODULE=ibus
-#export XMODIFIERS=@im=ibus
 export PATH=$PATH:/home/ar4sh/.local/bin/:/home/ar4sh/.config/composer/vendor/bin

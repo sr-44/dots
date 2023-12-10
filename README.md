@@ -1,13 +1,14 @@
-![alt text](https://github.com/sr-44/dots/blob/master/screenshots/bspwm.png)
+![alt text](https://github.com/sr-44/dots/blob/master/screenshots/hyprland.png)
 
 ## Things Used
 
 - **Distro**: [Arch](https://archlinux.org/)
-- **Bar**: [polybar](https://github.com/polybar/polybar)
+- **WM**: [Hyprland](https://github.com/hyprwm/Hyprland)
+- **Bar**: [waybar](https://github.com/Alexays/Waybar)
 - **Shell**: [zsh](https://www.zsh.org/)
 - **Terminal**: [alacritty](https://alacritty.org/)
 - **IDE**: [Neovim](https://neovim.io/) | [AstroNvim](https://github.com/AstroNvim/AstroNvim)
-- **File Manager**: [Yazi](https://github.com/sxyazi/yazi)
+- **File Manager**: [yazi](https://github.com/sxyazi/yazi)
 - **Notifications**: [dunst](https://github.com/dunst-project/dunst)
 - **Application launcher**: [rofi](https://github.com/davatorium/rofi)
 - **Font**: [JetBrains Mono](https://www.jetbrains.com/ru-ru/lp/mono/)
