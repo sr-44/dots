@@ -1,4 +1,4 @@
-![alt text](https://github.com/sr-44/dots/blob/master/screenshots/hyprland.png)
+![alt text](https://github.com/sr-44/dots/blob/master/screenshots/hypland.png)
 
 ## Things Used
 
