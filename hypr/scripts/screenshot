@@ -1,0 +1,20 @@
+#!/bin/bash
+
+
+with_slurp() {
+  grim -g "$(slurp -d)" - | tee ~/Pictures/screenshots/slurp/$(date '+%Y_%m_%d_%H%M%S').png | wl-copy
+}
+
+without_slurp() {
+  grim - | tee ~/Pictures/screenshots/fullscreen/$(date '+%Y_%m_%d_%H%M%S').png | wl-copy
+}
+
+
+if [[ "$1" == "slurp" ]];then
+  with_slurp
+  notify-send -a 'Grim' -u low 'Screenshot' "Screenshot saved"
+elif [[ "$1" == "no_slurp" ]];then
+  without_slurp
+  notify-send -a 'Grim' -u low 'Screenshot' "FullScreen screenshot saved filename"
+fi
+
