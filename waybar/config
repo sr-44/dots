@@ -13,7 +13,6 @@
         "custom/separator",
         "custom/uptime",
         "custom/separator",
-        "custom/networkspeed",
         "custom/separator",
         "custom/dunst",
     ],
@@ -48,11 +47,6 @@
         "format": "|",
     },
 
-    "custom/networkspeed": {
-        "exec": "~/.config/waybar/scripts/speed.sh wlan0",
-        "return-type": "json",
-        "format": "{}"
-    },
     "custom/dunst": {
         "exec": "~/.config/waybar/scripts/dunst.sh",
         "on-click": "dunstctl set-paused toggle",
@@ -188,14 +182,16 @@
 
 
     "network": {
-        // "interface": "wlp2*", // (Optional) To force the use of this interface
+        "interface": "wlan0", // (Optional) To force the use of this interface
         "format-wifi": "({signalStrength}%) ",
+        "tooltip-format-wifi": "{essid} ({bandwidthDownBits} {bandwidthUpBits}) ",
         "format-ethernet": "{ipaddr}/{cidr} ",
         "tooltip-format": "{ifname} via {gwaddr} ",
         "format-linked": "{ifname} (No IP) ",
         "format-disconnected": "",
         "format-alt": "{ifname}: {ipaddr}/{cidr}",
         "on-click": "nm-connection-editor",
+        "interval": 1,
     },
 
 
