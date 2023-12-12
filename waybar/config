@@ -13,6 +13,8 @@
         "custom/separator",
         "custom/uptime",
         "custom/separator",
+        "custom/networkspeed",
+        "custom/separator",
         "custom/dunst",
     ],
 
@@ -46,6 +48,10 @@
         "format": "|",
     },
 
+    "custom/networkspeed": {
+        "exec": "~/.config/waybar/scripts/speed.sh wlan0",
+        "format": "{}"
+    },
     "custom/dunst": {
         "exec": "~/.config/waybar/scripts/dunst.sh",
         "on-click": "dunstctl set-paused toggle",
