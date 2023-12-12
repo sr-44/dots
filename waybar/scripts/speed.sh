@@ -45,7 +45,7 @@ while snore ${isecs} ;do
     (( traffic_delta[i] = ( traffic_curr[i] - traffic_prev[i] ) / isecs ))
   done
   traffic_prev=(${traffic_curr[@]})
-  printf '%5s⇣ %5s⇡\n' $(human_readable ${traffic_delta[0]}) $(human_readable ${traffic_delta[4]})
+  printf '{"text": "%5s⇣ %5s⇡"}\n' $(human_readable ${traffic_delta[0]}) $(human_readable ${traffic_delta[4]})
   #printf '{"text": "%5s⇣ %5s⇡", "alt": "%s", "tooltip": "%s", "class": "%s", "percentage": %d }\n' $(human_readable ${traffic_delta[0]}) $(human_readable ${traffic_delta[4]}) '_alt' '_tooltip' '_class' 0
 done
 

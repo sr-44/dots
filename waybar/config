@@ -50,6 +50,7 @@
 
     "custom/networkspeed": {
         "exec": "~/.config/waybar/scripts/speed.sh wlan0",
+        "return-type": "json",
         "format": "{}"
     },
     "custom/dunst": {
