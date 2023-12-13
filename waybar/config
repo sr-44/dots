@@ -65,7 +65,7 @@
 
 
     "disk" : {
-        "format": "{used} ({percentage_used}%)"
+        "format": "({percentage_used}%) "
     },
 
     "hyprland/workspaces": {
@@ -148,7 +148,7 @@
         "tooltip": false
     },
     "memory": {
-        "format": "{}% "
+        "format": "{}% 󰍛"
     },
     "temperature": {
         // "thermal-zone": 2,
