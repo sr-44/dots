@@ -3,7 +3,7 @@ font=JetBrains Mono
 
 clock
 timestr=%R
-
+show-failed-attempts
 image=~/others/wallpapers/lies.jpg
 
 fade-in=0.2
