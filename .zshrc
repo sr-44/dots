@@ -29,6 +29,7 @@ alias dstart="sudo systemctl start docker"
 alias dstop="sudo systemctl stop docker.service docker.socket"
 alias phpstart="sudo systemctl start php-fpm nginx mariadb"
 alias phpstop="sudo systemctl stop php-fpm nginx mariadb"
+alias botrun="php artisan nutgram:run"
 
 # functions
 function proxy_on() {
