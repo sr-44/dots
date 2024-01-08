@@ -14,6 +14,8 @@
         "custom/uptime",
         "custom/separator",
         "custom/dunst",
+        "custom/separator",
+        "custom/todo",
     ],
 
     "modules-center": [
@@ -58,7 +60,11 @@
         "format": "󰺓   {}",
     },
 
-
+    "custom/todo": {
+        "exec": "~/.config/waybar/scripts/todo.sh",
+        "interval": 500,
+        "on-click": "alacritty -e /bin/zsh -c '~/projects/helper-cli/cli todo check && exec zsh'"
+    },
 
 
     // Modules configuration
