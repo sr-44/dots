@@ -1,9 +1,9 @@
 import = ["/home/ar4sh/dots/alacritty/colors.toml", "/home/ar4sh/dots/alacritty/fonts.toml"]
 live_config_reload = true
 
-[shell]
-program = "/bin/zsh"
-args = ["-c", "~/projects/helper-cli/cli todo check && exec zsh"]
+#[shell]
+#program = "/bin/zsh"
+#args = ["-c", "~/projects/helper-cli/cli todo check && exec zsh"]
 
 [cursor]
 unfocused_hollow = false
