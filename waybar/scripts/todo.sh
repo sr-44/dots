@@ -1,6 +1,6 @@
 #!/bin/bash
 
-COUNT=$(~/projects/helper-cli/cli todo count)
+COUNT=$(~/projects/personal/helper-cli/cli todo count)
 TASKS="ᅠ"
 COMPLETED="ᅠ"
 

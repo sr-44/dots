@@ -31,7 +31,7 @@ alias dstop="sudo systemctl stop docker.service docker.socket"
 alias phpstart="sudo systemctl start php-fpm nginx mariadb"
 alias phpstop="sudo systemctl stop php-fpm nginx mariadb"
 alias botrun="php artisan nutgram:run"
-alias helper="~/projects/helper-cli/cli"
+alias helper="~/projects/personal/helper-cli/cli"
 
 # functions
 function proxy_on() {

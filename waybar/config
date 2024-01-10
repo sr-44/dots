@@ -63,7 +63,7 @@
     "custom/todo": {
         "exec": "~/.config/waybar/scripts/todo.sh",
         "interval": 500,
-        "on-click": "alacritty -e /bin/zsh -c '~/projects/helper-cli/cli todo check && exec zsh'"
+        "on-click": "alacritty -e /bin/zsh -c '~/projects/personal/helper-cli/cli todo check && exec zsh'"
     },
 
 
