@@ -53,7 +53,7 @@
         "on-click": "dunstctl set-paused toggle",
         "restart-interval": 1,
     },
-    
+
     "custom/uptime": {
         "exec": "echo $(uptime --pretty | cut -c 4-)",
         "interval": 60,
@@ -151,10 +151,12 @@
     },
     "cpu": {
         "format": "{usage}% ",
-        "tooltip": false
+        "tooltip": false,
+        "interval": 1,
     },
     "memory": {
-        "format": "{}% 󰍛"
+        "format": "{}% 󰍛",
+        "interval": 1,
     },
     "temperature": {
         // "thermal-zone": 2,
@@ -162,7 +164,8 @@
         "critical-threshold": 80,
         // "format-critical": "{temperatureC}°C {icon}",
         "format": "{temperatureC}°C {icon}",
-        "format-icons": ["", "", ""]
+        "format-icons": ["", "", ""],
+        "interval": 1,
     },
     "backlight": {
         // "device": "acpi_video1",
@@ -182,7 +185,8 @@
         "format-alt": "{time} {icon}",
         // "format-good": "", // An empty format will hide the module
         // "format-full": "",
-        "format-icons": ["󰂎", "󱊡", "󱊢", "󱊣"]
+        "format-icons": ["󰂎", "󱊡", "󱊢", "󱊣"],
+        "interval": 1,
     },
 
 
