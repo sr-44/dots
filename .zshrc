@@ -32,6 +32,7 @@ alias phpstart="sudo systemctl start php-fpm nginx mariadb"
 alias phpstop="sudo systemctl stop php-fpm nginx mariadb"
 alias botrun="php artisan nutgram:run"
 alias helper="~/projects/personal/helper-cli/cli"
+alias stmd="sudo systemctl"
 
 # functions
 function proxy_on() {
