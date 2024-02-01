@@ -7,7 +7,7 @@
 - **Bar**: [waybar](https://github.com/Alexays/Waybar)
 - **Shell**: [zsh](https://www.zsh.org/)
 - **Terminal**: [alacritty](https://alacritty.org/)
-- **IDE**: [Neovim](https://neovim.io/) | [AstroNvim](https://github.com/AstroNvim/AstroNvim)
+- **IDE**: [Neovim](https://neovim.io/) | [Config](https://github.com/sr-44/nvim)
 - **File Manager**: [yazi](https://github.com/sxyazi/yazi)
 - **Notifications**: [dunst](https://github.com/dunst-project/dunst)
 - **Application launcher**: [rofi](https://github.com/davatorium/rofi)
