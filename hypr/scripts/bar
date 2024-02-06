@@ -4,7 +4,7 @@ if pgrep -x "waybar" > /dev/null
 then
     pkill waybar
 else
-    waybar &
+    waybar > /dev/null &
 fi
 
 
@@ -12,5 +12,5 @@ if pgrep -x "nm-applet" > /dev/null
 then
     pkill nm-applet
 else
-    nm-applet --indicator
+    nm-applet --indicator > /dev/null &
 fi
