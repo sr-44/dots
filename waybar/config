@@ -16,6 +16,8 @@
         "custom/dunst",
         "custom/separator",
         "custom/todo",
+        "custom/separator",
+        "custom/hide",
     ],
 
     "modules-center": [
@@ -65,7 +67,10 @@
         "interval": 500,
         "on-click": "alacritty -e /bin/zsh -c '~/projects/personal/helper-cli/cli todo check && exec zsh'"
     },
-
+    "custom/hide": {
+        "on-click": "~/.config/hypr/scripts/bar",
+        "format": " 󰈉 ",
+    },
 
     // Modules configuration
 
