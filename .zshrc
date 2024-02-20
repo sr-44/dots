@@ -6,7 +6,7 @@ ZSH_THEME="robbyrussell"
 
 ENABLE_CORRECTION="false"
 
-plugins=(git zsh-syntax-highlighting tmux artisan)
+plugins=(git zsh-syntax-highlighting tmux artisan wakatime)
 source $ZSH/oh-my-zsh.sh
 
 
