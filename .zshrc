@@ -33,7 +33,7 @@ alias phpstop="sudo systemctl stop php-fpm nginx mariadb"
 alias botrun="php artisan nutgram:run"
 alias helper="~/projects/personal/helper-cli/cli"
 alias stmd="sudo systemctl"
-
+alias t="touch"
 # functions
 function proxy_on() {
     export no_proxy="localhost,127.0.0.1,localaddress,.loc"
