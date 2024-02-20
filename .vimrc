@@ -50,6 +50,7 @@ Plug 'xolox/vim-misc'
 Plug 'Shougo/deoplete.nvim'
 Plug 'phpactor/phpactor' ,  {'do': 'composer install', 'for': 'php'}
 Plug 'kristijanhusak/deoplete-phpactor'
+Plug 'tribela/vim-transparent'
 call plug#end()
 call deoplete#custom#option('sources', {'php' : ['omni', 'phpactor', 'ultisnips', 'buffer']})
 "autocmd StdinReadPre * let s:std_in=1
