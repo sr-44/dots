@@ -26,7 +26,7 @@ window {
     transparency:                "real";
     location:                    center;
     anchor:                      center;
-    fullscreen:                  true;
+    fullscreen:                  false;
     width:                       1366px;
     height:                      768px;
     x-offset:                    0px;
@@ -103,7 +103,7 @@ listview {
     reverse:                     false;
     fixed-height:                true;
     fixed-columns:               true;
-    
+
     spacing:                     10px;
     margin:                      0px;
     padding:                     0px;
