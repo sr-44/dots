@@ -6,7 +6,7 @@
 }
 
 window#waybar {
-    background-color: rgba(43, 48, 59, 1);
+    background-color: rgba(43, 48, 59, 0);
     /*border-bottom: 3px solid rgba(100, 114, 125, 0.5);*/
     color: #ffffff;
     transition-property: background-color;
@@ -131,7 +131,7 @@ button:hover {
 }
 
 #clock {
-    background-color: rgba(43, 48, 59, 1);
+    background-color: rgba(43, 48, 59, 0);
 }
 
 #battery {
@@ -167,24 +167,24 @@ label:focus {
 }
 
 #cpu {
-    background-color: rgba(43, 48, 59, 1);
+    background-color: rgba(43, 48, 59, 0);
     color: #ffffff;
 }
 
 #memory {
-    background-color: rgba(43, 48, 59, 1);
+    background-color: rgba(43, 48, 59, 0);
 }
 
 #disk {
-    background-color: rgba(43, 48, 59, 1);
+    background-color: rgba(43, 48, 59, 0);
 }
 
 #backlight {
-    background-color: rgba(43, 48, 59, 1);
+    background-color: rgba(43, 48, 59, 0);
 }
 
 #network {
-    background-color: rgba(43, 48, 59, 1);
+    background-color: rgba(43, 48, 59, 0);
 }
 
 #network.disconnected {
@@ -192,12 +192,12 @@ label:focus {
 }
 
 #pulseaudio {
-    background-color: rgba(43, 48, 59, 1);
+    background-color: rgba(43, 48, 59, 0);
     color: #ffffff;
 }
 
 #pulseaudio.muted {
-    background-color: rgba(43, 48, 59, 1);
+    background-color: rgba(43, 48, 59, 0);
 }
 
 #wireplumber {
@@ -224,7 +224,7 @@ label:focus {
 }
 
 #temperature {
-    background-color: rgba(43, 48, 59, 1);
+    background-color: rgba(43, 48, 59, 0);
 }
 
 #temperature.critical {
@@ -232,7 +232,7 @@ label:focus {
 }
 
 #tray {
-    background-color: rgba(43, 48, 59, 1);
+    background-color: rgba(43, 48, 59, 0);
 }
 
 #tray>.passive {
@@ -271,7 +271,7 @@ label:focus {
 }
 
 #language {
-    background: rgba(43, 48, 59, 1);
+    background: rgba(43, 48, 59, 0);
     color: #ffffff;
     padding: 0 5px;
     margin: 0 5px;
