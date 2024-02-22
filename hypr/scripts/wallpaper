@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [[ "$1" == "random" ]]; then
+    i=$(( ( RANDOM % 9 ) +1))
+else
+    i=$1
+fi
+
+wp="$HOME/others/wallpapers/wp$i.png"
+
+if [ -f "$wp" ]; then
+    swaybg -i "$wp" > /dev/null
+fi
