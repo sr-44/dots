@@ -34,6 +34,9 @@ alias botrun="php artisan nutgram:run"
 alias helper="~/projects/personal/helper-cli/cli"
 alias stmd="sudo systemctl"
 alias t="touch"
+alias a="artisan"
+alias hyprlog="cat /tmp/hypr/$(ls -t /tmp/hypr/ | head -n 2 | tail -n 1)/hyprland.log"
+
 # functions
 function proxy_on() {
     export no_proxy="localhost,127.0.0.1,localaddress,.loc"
