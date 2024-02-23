@@ -9,5 +9,8 @@ fi
 wp="$HOME/others/wallpapers/wp$i.png"
 
 if [ -f "$wp" ]; then
+    if pgrep -x "swaybg" > /dev/null; then
+        pkill swaybg
+    fi
     swaybg -i "$wp" > /dev/null
 fi
