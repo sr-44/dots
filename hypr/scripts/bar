@@ -3,14 +3,11 @@
 if pgrep -x "waybar" > /dev/null
 then
     pkill waybar
+    if pgrep -x "nm-applet"; then
+        pkill nm-applet
+    fi
 else
     waybar > /dev/null &
-fi
-
-
-if pgrep -x "nm-applet" > /dev/null
-then
-    pkill nm-applet
-else
     nm-applet --indicator > /dev/null &
 fi
+
