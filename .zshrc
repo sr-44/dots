@@ -36,8 +36,8 @@ alias stmd="sudo systemctl"
 alias t="touch"
 alias a="artisan"
 alias hyprlog="cat /tmp/hypr/$(ls -t /tmp/hypr/ | head -n 2 | tail -n 1)/hyprland.log"
-alias blon=sudo systemctl start bluetooth.service
-alias bloff=sudo systemctl stop bluetooth
+alias blon="sudo systemctl start bluetooth.service"
+alias bloff="sudo systemctl stop bluetooth"
 # functions
 function proxy_on() {
     export no_proxy="localhost,127.0.0.1,localaddress,.loc"
