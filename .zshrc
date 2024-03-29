@@ -38,6 +38,9 @@ alias a="artisan"
 alias hyprlog="cat /tmp/hypr/$(ls -t /tmp/hypr/ | head -n 2 | tail -n 1)/hyprland.log"
 alias blon="sudo systemctl start bluetooth.service"
 alias bloff="sudo systemctl stop bluetooth"
+alias commit="git add . && git commit -am"
+
+
 # functions
 function proxy_on() {
     export no_proxy="localhost,127.0.0.1,localaddress,.loc"
