@@ -9,7 +9,6 @@ image=~/others/wallpapers/wp1.png
 fade-in=0.2
 
 effect-blur=15x2
-effect-greyscale
 effect-scale=0.1
 
 indicator
