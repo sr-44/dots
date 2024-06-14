@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
 # Получение списка приложений, сортировка по номеру рабочего стола
-apps=$(hyprctl clients -j | jq -r 'sort_by(.workspace.name | tonumber) | .[] | "\(.title) (Workspace: \(.workspace.name))"')
-
+apps=$(hyprctl clients -j | jq -r 'sort_by(.workspace.name | tonumber) | .[] | "\(.class) - \(.title) (Workspace: \(.workspace.name)) \(.workspace.name)"')
 # Показ списка в rofi и выбор приложения
 chosen=$(echo "$apps" | rofi -dmenu -i -p "Select application:" -theme ~/.config/rofi/switcher/style.rasi)
 
