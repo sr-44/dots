@@ -3,20 +3,18 @@
 dir="~/.config/rofi/helpers/"
 
 # Options
-bluetooth_on=''
-bluetooth_off=''
-connect_airpods=''
-disconnect_airpods=''
-notes_push=''
-notes_pull=''
+bluetooth_on='󰂱'
+bluetooth_off='󰂲'
+connect_airpods=''
+disconnect_airpods='󰟎'
+notes_push=''
+notes_pull=''
 yes=''
 no=''
 
 # Rofi CMD
 rofi_cmd() {
 	rofi -dmenu \
-		-p "Uptime: $uptime" \
-		-mesg "Uptime: $uptime" \
 		-theme ${dir}/style.rasi
 }
 
