@@ -1,20 +1,18 @@
 #!/bin/bash
 
-
 with_slurp() {
-  grim -g "$(slurp -d)" - | tee ~/Pictures/screenshots/slurp/$(date '+%Y_%m_%d_%H%M%S').png | wl-copy
+  grim -g "$(slurp -d)" - | swappy -f - -o - | tee ~/Pictures/screenshots/slurp/$(date '+%Y_%m_%d_%H%M%S').png | wl-copy
 }
 
 without_slurp() {
-  grim - | tee ~/Pictures/screenshots/fullscreen/$(date '+%Y_%m_%d_%H%M%S').png | wl-copy
+  grim - | swappy -f - -o - | tee ~/Pictures/screenshots/fullscreen/$(date '+%Y_%m_%d_%H%M%S').png | wl-copy
 }
 
-
-if [[ "$1" == "slurp" ]];then
+if [[ "$1" == "slurp" ]]; then
   with_slurp
-  notify-send -a 'Grim' -u low 'Screenshot' "Screenshot saved"
-elif [[ "$1" == "no_slurp" ]];then
+  notify-send -a 'Grim' -u low 'Screenshot' "Screenshot saved with Swappy"
+elif [[ "$1" == "no_slurp" ]]; then
   without_slurp
-  notify-send -a 'Grim' -u low 'Screenshot' "FullScreen screenshot saved filename"
+  notify-send -a 'Grim' -u low 'Screenshot' "FullScreen screenshot saved with Swappy"
 fi
 
