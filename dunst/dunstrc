@@ -5,8 +5,8 @@
 
 
     ### Geometry ###
-    width = (0, 300)
-    height = 300
+    width = (0, 700)
+    height = 400
 
     origin = top-right
 
@@ -49,7 +49,7 @@
 
 
     ### Text ###
-    font = ShureTechMono Nerd Font 11
+    font = Apple Emoji 15
 
 	line_height = 0
 

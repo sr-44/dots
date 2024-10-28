@@ -1,7 +1,7 @@
 * {
     /* `otf-font-awesome` is required to be installed for icons */
     font-family: Jetbrains Mono, FontAwesome, Roboto, Helvetica, Arial, monospace;
-    font-size: 12px;
+    font-size: 17px;
     font-weight: bold;
 }
 
@@ -51,7 +51,7 @@ button:hover {
 }
 
 #workspaces button {
-    padding: 0 5px;
+    padding: 0 7px;
     background-color: transparent;
     color: #ffffff;
 }
@@ -66,6 +66,9 @@ button:hover {
 
 }
 
+#dunst {
+  color: #000000
+}
 
 /*
 #workspaces button.persistent {

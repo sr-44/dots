@@ -1,11 +1,11 @@
 {
     "layer": "top",
     "position": "top",
-    "height": 14,
+    "height": 20,
 
     //"width": 1280, // Waybar width
 
-    "spacing": 1, // Gaps between modules (4px)
+    "spacing": 4, // Gaps between modules (4px)
 
 
     "modules-left": [
@@ -14,9 +14,9 @@
         "custom/uptime",
         "custom/separator",
         "custom/dunst",
-        "custom/separator",
-        "custom/todo",
-        "custom/separator",
+     //   "custom/separator",
+    //   "custom/todo",
+     //   "custom/separator",
         "custom/hide",
     ],
 
@@ -196,7 +196,7 @@
 
 
     "network": {
-        "interface": "wlan0", // (Optional) To force the use of this interface
+        "interface": "wlp0s20f3", // (Optional) To force the use of this interface
         "format-wifi": "({signalStrength}%) ",
         "tooltip-format-wifi": "{ifname}: {ipaddr}/{cidr} ",
         "format-ethernet": "{ipaddr}/{cidr} ",

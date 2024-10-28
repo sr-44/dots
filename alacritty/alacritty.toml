@@ -1,5 +1,3 @@
-import = ["/home/ar4sh/dots/alacritty/colors.toml", "/home/ar4sh/dots/alacritty/fonts.toml"]
-live_config_reload = true
 
 #[shell]
 #program = "/bin/zsh"
@@ -31,3 +29,7 @@ lines = 23
 [window.padding]
 x = 3
 y = 3
+
+[general]
+live_config_reload = true
+import = ["~/.config/alacritty/colors.toml", "~/.config/alacritty/fonts.toml"]
