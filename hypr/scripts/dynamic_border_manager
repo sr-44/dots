@@ -1,0 +1,16 @@
+#!/bin/bash
+
+while true; do
+    active_workspace=$(hyprctl activewindow | grep "workspace:" | awk '{print $2}')
+
+    window_count=$(hyprctl workspaces | grep -A 6 "workspace ID $active_workspace" | grep -m 1 "windows:" | awk '{print $2}')
+
+    if [[ "$window_count" -eq 1 ]]; then
+        hyprctl keyword general:border_size 0 >> /dev/null
+    elif [[ "$window_count" -gt 1 ]]; then
+        hyprctl keyword general:border_size 1 >> /dev/null
+    fi
+
+    sleep 0.5
+done
+
