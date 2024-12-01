@@ -39,6 +39,7 @@ alias a="artisan"
 alias blon="sudo systemctl start bluetooth.service"
 alias bloff="sudo systemctl stop bluetooth"
 alias commit="git add . && git commit -am"
+alias open="xdg-open"
 
 
 # functions
