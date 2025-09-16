@@ -1,11 +1,11 @@
 #!/bin/bash
 
 with_slurp() {
-  grim -g "$(slurp -d)" - | swappy -f - -o - | tee ~/Pictures/screenshots/slurp/$(date '+%Y_%m_%d_%H%M%S').png | wl-copy
+  grim -g "$(slurp -d)" - | swappy -f - -o - | tee ~/Pictures/Screenshots/slurp/$(date '+%Y_%m_%d_%H%M%S').png | wl-copy
 }
 
 without_slurp() {
-  grim - | swappy -f - -o - | tee ~/Pictures/screenshots/fullscreen/$(date '+%Y_%m_%d_%H%M%S').png | wl-copy
+  grim - | swappy -f - -o - | tee ~/Pictures/Screenshots/fullscreen/$(date '+%Y_%m_%d_%H%M%S').png | wl-copy
 }
 
 if [[ "$1" == "slurp" ]]; then
