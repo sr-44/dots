@@ -40,6 +40,7 @@ alias blon="sudo systemctl start bluetooth.service"
 alias bloff="sudo systemctl stop bluetooth"
 alias commit="git add . && git commit -am"
 alias open="xdg-open"
+alias restart_hyprlock="hyprctl --instance 0 'keyword misc:allow_session_lock_restore 1' && hyprctl --instance 0 'dispatch exec hyprlock'"
 
 
 # functions
@@ -84,3 +85,5 @@ function proxy_off() {
 
 
 export PATH=$PATH:/home/ar4sh/.local/bin/:/home/ar4sh/.config/composer/vendor/bin
+export PATH="$PATH:/home/ar4sh/.local/share/JetBrains/Toolbox/scripts"
+
