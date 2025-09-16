@@ -1,13 +1,38 @@
 #!/bin/bash
 
-if pgrep -x "waybar" > /dev/null
-then
-    pkill waybar
-    if pgrep -x "nm-applet"; then
-        pkill nm-applet
+CURRENT_UID=$(id -u)
+
+is_user_process() {
+    local pid=$1
+    local uid=$(ps -o uid= -p "$pid" | tr -d ' ')
+    [ "$uid" -eq "$CURRENT_UID" ]
+}
+
+WAYBAR_PID=$(pgrep -x "waybar")
+USER_WAYBAR_PID=""
+for pid in $WAYBAR_PID; do
+    if is_user_process "$pid"; then
+        USER_WAYBAR_PID="$pid"
+        break
+    fi
+done
+
+if [ -n "$USER_WAYBAR_PID" ]; then
+    kill "$USER_WAYBAR_PID"
+
+    NM_APPLET_PID=$(pgrep -x "nm-applet")
+    USER_NM_APPLET_PID=""
+    for pid in $NM_APPLET_PID; do
+        if is_user_process "$pid"; then
+            USER_NM_APPLET_PID="$pid"
+            break
+        fi
+    done
+
+    if [ -n "$USER_NM_APPLET_PID" ]; then
+        kill "$USER_NM_APPLET_PID"
     fi
 else
-    waybar > /dev/null &
-    nm-applet --indicator > /dev/null &
+    waybar > /dev/null 2>&1 &
+    nm-applet --indicator > /dev/null 2>&1 &
 fi
-
