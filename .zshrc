@@ -22,6 +22,7 @@ alias :wq="exit"
 alias :off="poweroff"
 alias slp="systemctl suspend"
 alias out="pkill -KILL -u $(whoami)"
+alias out-user="sudo pkill -KILL -u"
 alias wflist="nmcli device wifi list"
 alias wfconnect="nmcli -ask device wifi connect"
 alias c="gcc -std=c99 -fdiagnostics-color=always"
@@ -41,6 +42,7 @@ alias bloff="sudo systemctl stop bluetooth"
 alias commit="git add . && git commit -am"
 alias open="xdg-open"
 alias restart_hyprlock="hyprctl --instance 0 'keyword misc:allow_session_lock_restore 1' && hyprctl --instance 0 'dispatch exec hyprlock'"
+
 
 
 # functions
