@@ -13,7 +13,10 @@
         "custom/separator",
         "custom/uptime",
         "custom/separator",
-        "custom/dunst"
+        "hyprland/language",
+        "custom/separator",
+        "custom/dunst",
+        "custom/separator",
     ],
 
     "modules-center": [
@@ -28,8 +31,6 @@
         "pulseaudio",
         "custom/separator",
         "battery",
-        "custom/separator",
-        "hyprland/language",
         "custom/separator",
         "memory",
         "custom/separator",
@@ -205,8 +206,8 @@
         "format-source-muted": "",
         "format-icons": {
             "headphone": "",
-            "hands-free": "",
-            "headset": "",
+            "hands-free": " ",
+            "headset": " ",
             "phone": "",
             "portable": "",
             "car": "",
