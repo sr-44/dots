@@ -63,11 +63,11 @@ run_cmd() {
 run_cmd_no_confirm() {
 	if [[ $1 == '--connect-airpods' ]]; then
 		bluetoothctl power on
-		bluetoothctl connect 1C:D2:E5:4E:62:99
-        pactl set-default-sink bluez_output.1C_D2_E5_4E_62_99.1
+        bluetoothctl connect 48:73:CB:65:5D:9B
+        pactl set-default-sink bluez_output.48_73_CB_65_5D_9B.1
 	elif [[ $1 == '--disconnect-airpods' ]]; then
-		bluetoothctl disconnect 1C:D2:E5:4E:62:99
-        pactl set-default-sink alsa_output.pci-0000_05_00.6.analog-stereo
+		bluetoothctl disconnect 48:73:CB:65:5D:9B
+        pactl set-default-sink alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Headphones__sink
     fi
 }
 
