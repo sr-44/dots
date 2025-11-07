@@ -1,16 +1,36 @@
 #!/bin/bash
 
-if [[ "$1" == "random" ]]; then
-    i=$(( ( RANDOM % 9 ) +1))
-else
-    i=$1
-fi
+WPDIR="$HOME/others/wallpapers"
+STATE="$HOME/.cache/current_wp"
 
-wp="$HOME/others/wallpapers/wp$i.png"
+mapfile -t files < <(find "$WPDIR" -maxdepth 1 -type f \( -iname '*.png' -o -iname '*.jpg' \) | sort)
+count=${#files[@]}
+[ "$count" -eq 0 ] && exit 1
+
+current=$(cat "$STATE" 2>/dev/null || echo 1)
+
+case "$1" in
+    random)
+        i=$(( ( RANDOM % count ) + 1 ))
+        ;;
+    next)
+        i=$(( current + 1 ))
+        [ "$i" -gt "$count" ] && i=1
+        ;;
+    prev)
+        i=$(( current - 1 ))
+        [ "$i" -lt 1 ] && i=$count
+        ;;
+    *)
+        i=$1
+        ;;
+esac
+
+wp="${files[$((i-1))]}"
 
 if [ -f "$wp" ]; then
-    if pgrep -x "swaybg" > /dev/null; then
-        pkill swaybg
-    fi
-    swaybg -i "$wp" > /dev/null
+    pkill swaybg 2>/dev/null
+    swaybg -i "$wp" >/dev/null 2>&1 &
+    echo "$i" > "$STATE"
 fi
+
