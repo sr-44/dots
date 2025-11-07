@@ -1,0 +1,18 @@
+#!/bin/bash
+
+BAT_PATH=/sys/class/power_supply/BAT1
+CAPACITY_FILE="$BAT_PATH/capacity"
+STATUS_FILE="$BAT_PATH/status"
+
+while true; do
+    if [ -f "$CAPACITY_FILE" ] && [ -f "$STATUS_FILE" ]; then
+        CAPACITY=$(cat "$CAPACITY_FILE")
+        STATUS=$(cat "$STATUS_FILE")
+
+        if [ "$STATUS" != "Charging" ] && [ "$CAPACITY" -lt 10 ]; then
+            notify-send "Батарея" "Заряд меньше 10% ($CAPACITY%)"
+        fi
+    fi
+    sleep 60
+done
+
