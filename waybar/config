@@ -17,6 +17,7 @@
         "custom/separator",
         "custom/dunst",
         "custom/separator",
+        "mpris"
     ],
 
     "modules-center": [
@@ -54,10 +55,27 @@
     },
 
     "custom/uptime": {
-        "exec": "echo $(uptime --pretty | cut -c 4-)",
+        "exec": "uptime -p | sed -E 's/up //; s/([0-9]+) hours?/\\1h/; s/([0-9]+) minutes?/\\1m/'",
         "interval": 60,
         "format": "󰺓   {}",
     },
+
+    "mpris": {
+    "format": " ",
+    "format-alt": "{player_icon} {artist} - {title}",
+    "on-click": "mode",
+    "format-paused": "",
+    "format-stopped": "",
+    "player-icons": {
+        "default": "",
+        "spotify": "",
+        "vlc": "󰕼",
+        "chromium": ""
+    },
+    "interval": 1,
+    "max-length": 50,
+    "tooltip": true
+},
 
 
     // Modules configuration
@@ -74,7 +92,7 @@
         "warp-on-scroll": false,
         "format": "{id}",
         "persistent-workspaces": {
-             "*": 10,
+             "*": 0,
        }
     },
 
