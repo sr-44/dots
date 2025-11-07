@@ -74,7 +74,7 @@
         "warp-on-scroll": false,
         "format": "{id}",
         "persistent-workspaces": {
-             "*": 10,
+             "*": 0,
        }
     },
 
