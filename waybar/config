@@ -67,10 +67,7 @@
     "format-paused": "",
     "format-stopped": "",
     "player-icons": {
-        "default": "",
-        "spotify": "",
-        "vlc": "󰕼",
-        "chromium": ""
+        "default": "",
     },
     "interval": 1,
     "max-length": 50,
