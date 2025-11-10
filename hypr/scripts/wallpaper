@@ -3,7 +3,7 @@
 WPDIR="$HOME/others/wallpapers"
 STATE="$HOME/.cache/current_wp"
 
-mapfile -t files < <(find "$WPDIR" -maxdepth 1 -type f \( -iname '*.png' -o -iname '*.jpg' \) | sort)
+mapfile -t files < <(find -L "$WPDIR" -maxdepth 1 -type f \( -iname '*.png' -o -iname '*.jpg' \) | sort)
 count=${#files[@]}
 [ "$count" -eq 0 ] && exit 1
 
