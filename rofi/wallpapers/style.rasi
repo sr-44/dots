@@ -6,7 +6,7 @@ configuration {
     drun-display-format:        "{name}";
 }
 
-@import             "../onedark.rasi"
+@import             "../catppuccin-mocha-blue.rasi"
 @import              "fonts.rasi"
 
 /*****----- Main Window -----*****/
