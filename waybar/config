@@ -10,8 +10,8 @@
 
     "modules-left": [
         "hyprland/workspaces",
-        "custom/separator",
-        "custom/uptime",
+//        "custom/separator",
+//        "custom/uptime",
         "custom/separator",
         "hyprland/language",
         "custom/separator",
