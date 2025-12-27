@@ -359,6 +359,7 @@ tmux_conf_copy_to_os_clipboard=false
 set -g mouse on
 
 set -g set-clipboard on                   # for vim buffer
+set -g allow-passthrough on
 
 # force Vi mode
 #   really you should export VISUAL or EDITOR environment variable, see manual
