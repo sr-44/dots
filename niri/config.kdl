@@ -387,8 +387,8 @@ binds {
     Mod+1 { focus-workspace "coding"; }
     Mod+2 { focus-workspace "browsing"; }
     Mod+3 { focus-workspace "chatting"; }
-    Mod+4 { focus-workspace "multimedia"; }
-    Mod+5 { focus-workspace "documents"; }
+    Mod+4 { focus-workspace "documents"; }
+    Mod+5 { focus-workspace "multimedia"; }
     Mod+6 { focus-workspace 6; }
 
 }
