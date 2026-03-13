@@ -391,4 +391,11 @@ binds {
     Mod+5 { focus-workspace "multimedia"; }
     Mod+6 { focus-workspace 6; }
 
+    Mod+Shift+1 { move-window-to-workspace "coding"; }
+    Mod+Shift+2 { move-window-to-workspace "browsing"; }
+    Mod+Shift+3 { move-window-to-workspace "chatting"; }
+    Mod+Shift+4 { move-window-to-workspace "documents"; }
+    Mod+Shift+5 { move-window-to-workspace "multimedia"; }
+    Mod+Shift+6 { move-window-to-workspace 6; }
+
 }
