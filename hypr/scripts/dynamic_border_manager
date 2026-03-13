@@ -1,16 +1,24 @@
 #!/bin/bash
 
-while true; do
-    active_workspace=$(hyprctl activewindow | grep "workspace:" | awk '{print $2}')
+update_border() {
+    local window_count
+    window_count=$(hyprctl activeworkspace -j | jq '.windows')
 
-    window_count=$(hyprctl workspaces | grep -A 6 "workspace ID $active_workspace" | grep -m 1 "windows:" | awk '{print $2}')
-
-    if [[ "$window_count" -eq 1 ]]; then
-        hyprctl keyword general:border_size 0 >> /dev/null
-    elif [[ "$window_count" -gt 1 ]]; then
-        hyprctl keyword general:border_size 1 >> /dev/null
+    if [[ "$window_count" -le 1 ]]; then
+        hyprctl keyword general:border_size 0 >/dev/null
+    else
+        hyprctl keyword general:border_size 1 >/dev/null
     fi
+}
 
-    sleep 0.5
+socket="${XDG_RUNTIME_DIR}/hypr/${HYPRLAND_INSTANCE_SIGNATURE}/.socket2.sock"
+
+update_border
+
+socat -u "UNIX-CONNECT:${socket}" - | while IFS= read -r line; do
+    case "${line%%>>*}" in
+        openwindow|closewindow|movewindow|workspace|focusedmon)
+            update_border
+            ;;
+    esac
 done
-

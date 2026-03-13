@@ -25,7 +25,7 @@
     ],
 
     "modules-right": [
-        "disk",
+        "idle_inhibitor",
         "custom/separator",
         "backlight",
         "custom/separator",
@@ -77,9 +77,14 @@
 
     // Modules configuration
 
-
-    "disk" : {
-        "format": "({percentage_used}%) "
+    "idle_inhibitor": {
+        "format": "{icon}",
+        "format-icons": {
+            "activated": "󰅶",
+            "deactivated": "󰾪"
+        },
+        "tooltip-format-activated": "idle inhibitor: on",
+        "tooltip-format-deactivated": "idle inhibitor: off"
     },
 
     "hyprland/workspaces": {
