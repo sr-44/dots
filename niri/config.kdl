@@ -1,60 +1,60 @@
-// ╔══════════════════════════════════════════════════╗
-// ║  niri config — Catppuccin Mocha                  ║
-// ║  Scrollable-tiling Wayland compositor             ║
-// ╚══════════════════════════════════════════════════╝
+// ─────────────────────────────────────────────────
+// NIRI CONFIG
+// ─────────────────────────────────────────────────
 
-// ── Input ────────────────────────────────────────────
 
+// INPUT
 input {
+
     keyboard {
         xkb {
             layout "us,ru"
             options "grp:caps_toggle"
         }
+
         repeat-delay 600
         repeat-rate 25
     }
 
     touchpad {
         tap
-        natural-scroll
-        accel-speed 0.2
+        // natural-scroll
+        accel-speed 0.3
         accel-profile "adaptive"
         scroll-method "two-finger"
     }
 
     mouse {
-        accel-speed 0.2
+        accel-speed 0.3
         accel-profile "flat"
     }
 
-    // Курсор переходит к фокусированному окну
     warp-mouse-to-focus
 
-    // Фокус следует за мышью
     focus-follows-mouse max-scroll-amount="0%"
 }
 
-// ── Outputs (мониторы) ───────────────────────────────
 
+// OUTPUTS
 output "eDP-1" {
-    mode "1920x1080@60.000"
+    mode "1920x1080@60"
     scale 1.0
     position x=0 y=0
 }
 
 output "HDMI-A-1" {
-    mode "1920x1080@60.000"
+    mode "1920x1080@60"
     scale 1.0
     position x=0 y=-1080
 }
 
-// ── Layout ───────────────────────────────────────────
 
+// LAYOUT
 layout {
+
     gaps 2
 
-    center-focused-column "never"
+    center-focused-column "always"
 
     preset-column-widths {
         proportion 0.33333
@@ -62,7 +62,9 @@ layout {
         proportion 0.66667
     }
 
-    default-column-width { proportion 0.5; }
+    default-column-width {
+        proportion 0.5
+    }
 
     preset-window-heights {
         proportion 0.33333
@@ -70,20 +72,17 @@ layout {
         proportion 0.66667
     }
 
-    // Фокус-кольцо выключено, используем бордер
     focus-ring {
         off
     }
 
-    // Бордер окон — градиент как в Hyprland (blue → lavender)
     border {
         on
-        width 2
+        width 1
         active-gradient from="#89b4faee" to="#b4befeee" angle=45
         inactive-color "#1e1e2eee"
     }
 
-    // Тени
     shadow {
         on
         softness 20
@@ -92,357 +91,306 @@ layout {
         color "#00000055"
     }
 
-    // Индикатор вставки
     insert-hint {
         on
         color "#89b4fa80"
     }
 
-    struts {
-        // left 0
-        // right 0
-        // top 0
-        // bottom 0
+    tab-indicator {
+        width 4
+        active-color "#89b4fa"
+        inactive-color "#45475a"
+        urgent-color "#f38ba8"
     }
 }
 
-// ── Cursor ───────────────────────────────────────────
 
+// ANIMATIONS
+animations {
+    horizontal-view-movement {
+        spring damping-ratio=1.0 stiffness=2000 epsilon=0.001
+    }
+
+    window-movement {
+        spring damping-ratio=1.0 stiffness=2000 epsilon=0.001
+    }
+
+    workspace-switch {
+        spring damping-ratio=1.0 stiffness=2000 epsilon=0.001
+    }
+
+    window-open {
+        duration-ms 100
+        curve "ease-out-expo"
+    }
+
+    window-close {
+        duration-ms 100
+        curve "ease-out-expo"
+    }
+}
+
+
+// CURSOR
 cursor {
     xcursor-theme "Bibata-Modern-Ice"
     xcursor-size 24
 }
 
-// ── Miscellaneous ────────────────────────────────────
 
-// Предпочитать серверные декорации (без CSD)
-prefer-no-csd
-
-// Скриншоты
-screenshot-path "~/Pictures/Screenshots/niri_%Y-%m-%d_%H-%M-%S.png"
-
-// Скрыть оверлей горячих клавиш при старте
-hotkey-overlay {
-    skip-at-startup
-}
-
-// ── Environment ──────────────────────────────────────
-
+// ENV
 environment {
+
     XDG_CURRENT_DESKTOP "niri"
     XDG_SESSION_TYPE "wayland"
     XDG_SESSION_DESKTOP "niri"
+
     GDK_SCALE "1"
+
     XCURSOR_THEME "Bibata-Modern-Ice"
     XCURSOR_SIZE "24"
-    TERM "xterm-256color"
+
     QT_QPA_PLATFORM "wayland"
     MOZ_ENABLE_WAYLAND "1"
 }
 
-// ── Startup ──────────────────────────────────────────
 
+// STARTUP
 spawn-at-startup "dunst"
-spawn-at-startup "sh" "-c" "~/.config/hypr/scripts/wallpaper 11"
+spawn-at-startup "waybar"
 spawn-at-startup "hypridle"
 spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
+
+spawn-at-startup "sh" "-c" "~/.config/hypr/scripts/wallpaper 11"
 spawn-at-startup "sh" "-c" "~/.config/hypr/scripts/battery-check"
-spawn-at-startup "waybar"
 
-// ── Animations ───────────────────────────────────────
 
-animations {
-    slowdown 1.0
+// WORKSPACES
+workspace "coding" {}
+workspace "browsing" {}
+workspace "chatting" {}
+workspace "documents" {}
+workspace "multimedia" {}
 
-    workspace-switch {
-        duration-ms 200
-        curve "ease-out-cubic"
-    }
 
-    window-open {
-        duration-ms 150
-        curve "ease-out-expo"
-    }
 
-    window-close {
-        duration-ms 150
-        curve "ease-in-cubic"
-    }
+prefer-no-csd
 
-    horizontal-view-movement {
-        duration-ms 250
-        curve "ease-out-expo"
-    }
+// WINDOW RULES
 
-    window-movement {
-        duration-ms 200
-        curve "ease-out-cubic"
-    }
-
-    window-resize {
-        duration-ms 200
-        curve "ease-out-cubic"
-    }
-
-    config-notification-open-close {
-        duration-ms 200
-        curve "ease-out-cubic"
-    }
-
-    screenshot-ui-open {
-        duration-ms 150
-        curve "ease-out-cubic"
-    }
-}
-
-// ── Named Workspaces ─────────────────────────────────
-
-workspace "1" {}
-workspace "2" {}
-workspace "3" {}
-workspace "4" {}
-workspace "5" {}
-workspace "6" {}
-workspace "7" {}
-workspace "8" {}
-workspace "9" {}
-workspace "10" {}
-
-// ── Window Rules ─────────────────────────────────────
-
-// Alacritty — полупрозрачность (как в Hyprland: 0.8)
+// coding
 window-rule {
-    match app-id="Alacritty"
-    opacity 0.8
+    match app-id="jetbrains-phpstorm"
+    open-on-workspace "coding"
 }
 
-// Alacritty — слегка меньшая ширина по умолчанию
 window-rule {
-    match app-id="Alacritty"
-    default-column-width { proportion 0.5; }
+    match app-id="postman"
+    open-on-workspace "coding"
 }
 
-// Pavucontrol — всплывающее окно
+
+// browsing
+
+window-rule {
+    match app-id="zen"
+    open-on-workspace "browsing"
+}
+
+window-rule {
+    match app-id="firefox"
+    open-on-workspace "browsing"
+}
+
+window-rule {
+    match app-id="chromium"
+    open-on-workspace "browsing"
+}
+
+window-rule {
+    match app-id="google-chrome"
+    open-on-workspace "browsing"
+}
+
+
+// chatting
+window-rule {
+    match app-id="org.telegram.desktop"
+    open-on-workspace "chatting"
+}
+window-rule {
+    match app-id="com.ayugram.desktop"
+    open-on-workspace "chatting"
+}
+
+window-rule {
+    match app-id="discord"
+    open-on-workspace "chatting"
+}
+
+window-rule {
+    match app-id="teams-for-linux"
+    open-on-workspace "chatting"
+}
+
+
+// multimedia
+window-rule {
+    match app-id="com.obsproject.Studio"
+    open-on-workspace "multimedia"
+}
+
+window-rule {
+    match app-id="yandexmusic"
+    open-on-workspace "multimedia"
+}
+
+
+// documents
+
+window-rule {
+    match app-id="obsidian"
+    open-on-workspace "documents"
+}
+
+window-rule {
+    match app-id="onlyoffice-desktopeditors"
+    open-on-workspace "documents"
+}
+
+window-rule {
+    match app-id="libreoffice-startcenter"
+    open-on-workspace "documents"
+}
+
+
+// floating apps
+window-rule {
+    match app-id="blueman-manager"
+    open-floating true
+}
+
 window-rule {
     match app-id="pavucontrol"
-    default-floating true
+    open-floating true
 }
 
-// File manager — шире
-window-rule {
-    match app-id="thunar"
-    default-column-width { proportion 0.5; }
-}
 
-// Picture-in-picture — плавающее
+// picture in picture
 window-rule {
     match title="Picture-in-Picture"
-    default-floating true
+    open-floating true
 }
 
-// Скруглённые углы для всех окон (10px как в Hyprland)
+
+// no decorations for alacritty
+window-rule {
+    match app-id="Alacritty"
+    draw-border-with-background false
+    opacity 0.92
+}
+
+// rounded windows
 window-rule {
     geometry-corner-radius 10
     clip-to-geometry true
 }
 
-// ── Gestures ─────────────────────────────────────────
-// niri поддерживает жесты тачпада нативно:
-// 3-пальцевый горизонтальный свайп = переключение воркспейсов
-// (встроено в niri, настраивается автоматически)
 
-// ── Keybindings ──────────────────────────────────────
+// maximize by default
+window-rule {
+    open-maximized true
+}
 
+
+
+// KEYBINDS
 binds {
 
-    // ─── Запуск приложений (1:1 с Hyprland) ────────────
-
-    // Терминал
+    // apps
     Mod+Return { spawn "alacritty"; }
 
-    // Файловый менеджер
     Mod+E { spawn "thunar"; }
 
-    // Rofi launcher (через скрипт — сохраняет тему и параметры)
-    Mod+D { spawn "bash" "~/.config/rofi/launcher/launcher.sh"; }
+    Mod+D { spawn-sh "~/.config/rofi/launcher/launcher.sh"; }
 
-    // Rofi app switcher (через скрипт)
-    Mod+A { spawn "bash" "~/.config/rofi/switcher/launcher.sh"; }
+    Mod+A { spawn-sh "~/.config/rofi/switcher/launcher.sh"; }
 
-    // Rofi helpers menu
-    Mod+Alt+H { spawn "bash" "~/.config/rofi/helpers/helpers.sh"; }
+    Mod+P { spawn-sh "~/.config/rofi/powermenu/powermenu.sh"; }
 
-    // Rofi power menu
-    Mod+P { spawn "bash" "~/.config/rofi/powermenu/powermenu.sh"; }
+    Mod+W { spawn-sh "~/.config/rofi/wallpapers/wallpaper.sh"; }
 
-    // Rofi wallpaper selector
-    Mod+W { spawn "bash" "~/.config/rofi/wallpapers/wallpaper.sh"; }
+    Mod+B { spawn-sh "~/.config/hypr/scripts/bar"; }
 
-    // Toggle waybar + nm-applet
-    Mod+B { spawn "bash" "~/.config/hypr/scripts/bar"; }
-
-    // Toggle dunst (notification pause)
     Mod+N { spawn "dunstctl" "set-paused" "toggle"; }
 
-    // slurp (selection tool)
     Mod+O { spawn "slurp"; }
 
-    // ─── Скриншоты ───────────────────────────────────
 
-    // Интерактивный UI скриншотов niri (уникальная фича!)
+    // screenshots
     Print { screenshot; }
+    Mod+Print { screenshot-screen; }
+    Mod+F12 { spawn-sh "~/.config/hypr/scripts/screenshot no_slurp"; }
+    Mod+Shift+F12 { spawn-sh "~/.config/hypr/scripts/screenshot slurp"; }
 
-    // Скриншот полный (как в Hyprland: Mod+F12)
-    Mod+F12 { spawn "sh" "-c" "~/.config/hypr/scripts/screenshot no_slurp"; }
+    // volume
+    XF86AudioLowerVolume { spawn "pamixer" "-u" "-d" "5"; }
+    XF86AudioRaiseVolume { spawn "pamixer" "-u" "-i" "5"; }
+    XF86AudioMute { spawn "pamixer" "-m"; }
+    Mod+F10 { spawn "pamixer" "-u" "-d" "5"; }
+    Mod+F11 { spawn "pamixer" "-u" "-i" "5"; }
 
-    // Скриншот с выделением (как в Hyprland: Mod+Shift+F12)
-    Mod+Shift+F12 { spawn "sh" "-c" "~/.config/hypr/scripts/screenshot slurp"; }
+    // brightness
+    XF86MonBrightnessDown { spawn "brightnessctl" "set" "5%-"; }
+    XF86MonBrightnessUp { spawn "brightnessctl" "set" "5%+"; }
 
-    // Скриншот экрана/окна через niri
-    Ctrl+Print { screenshot-screen; }
-    Alt+Print { screenshot-window; }
+    // media
+    XF86AudioPlay { spawn "playerctl" "play-pause"; }
+    XF86AudioNext { spawn "playerctl" "next"; }
+    XF86AudioPrev { spawn "playerctl" "previous"; }
 
-    // ─── Обои ────────────────────────────────────────
 
-    // Случайные обои
-    Mod+R { spawn "bash" "~/.config/hypr/scripts/wallpaper" "random"; }
-
-    // Предыдущие обои
-    Mod+BracketLeft { spawn "bash" "~/.config/hypr/scripts/wallpaper" "prev"; }
-
-    // Следующие обои
-    Mod+BracketRight { spawn "bash" "~/.config/hypr/scripts/wallpaper" "next"; }
-
-    // ─── Управление окнами ───────────────────────────
-
-    // Закрыть окно
+    // window control
     Mod+Q { close-window; }
 
-    // Фуллскрин
     Mod+F { fullscreen-window; }
 
-    // Переключить плавающее
     Mod+S { toggle-window-floating; }
 
-    // Центрировать окно (для плавающих)
     Mod+C { center-column; }
 
-    // ─── Перемещение окон (Mod+H/J/K/L как в Hyprland) ──
 
-    Mod+H { move-column-left; }
-    Mod+L { move-column-right; }
-    Mod+J { move-window-down; }
-    Mod+K { move-window-up; }
+    // move
+    Mod+H { focus-column-left; }
+    Mod+L { focus-column-right; }
+    Mod+J { focus-workspace-down; }
+    Mod+K { focus-workspace-up; }
+    //Mod+H { move-column-left; }
+    //Mod+L { move-column-right; }
+//    Mod+J { move-window-down; }
+ //   Mod+K { move-window-up; }
 
-    // ─── Навигация (стрелки для фокуса) ────────────────
 
-    Mod+Left  { focus-column-left; }
-    Mod+Right { focus-column-right; }
-    Mod+Up    { focus-window-up; }
-    Mod+Down  { focus-window-down; }
-
-    // Shift+стрелки для перемещения
-    Mod+Shift+Left  { move-column-left; }
-    Mod+Shift+Right { move-column-right; }
-    Mod+Shift+Up    { move-window-up; }
-    Mod+Shift+Down  { move-window-down; }
-
-    // ─── Ресайз окон ────────────────────────────────
-
+    // resize
     Mod+Alt+H { set-column-width "-10%"; }
     Mod+Alt+L { set-column-width "+10%"; }
     Mod+Alt+J { set-window-height "+10%"; }
     Mod+Alt+K { set-window-height "-10%"; }
 
-    Mod+Alt+Left  { set-column-width "-10%"; }
-    Mod+Alt+Right { set-column-width "+10%"; }
-    Mod+Alt+Up    { set-window-height "-10%"; }
-    Mod+Alt+Down  { set-window-height "+10%"; }
 
-    // Пресетные ширины (циклическое переключение)
-    Mod+Comma { switch-preset-column-width; }
-
-    // Максимизировать колонку
-    Mod+Shift+F { maximize-column; }
-
-    // ─── Consume / Expel (уникальная фича niri) ─────
-    // consume: забрать соседнюю колонку в текущую (стакинг)
-    // expel:   вытолкнуть окно из колонки в отдельную
-    Mod+T { consume-window-into-column; }
-    Mod+Shift+T { expel-window-from-column; }
-
-    // ─── Табы (уникальная фича niri) ─────────────────
-    // Переключение отображения колонки: tiled ↔ tabbed
+    // tabs
     Mod+Ctrl+W { toggle-column-tabbed-display; }
 
-    // ─── Воркспейсы ─────────────────────────────────
 
-    Mod+1 { focus-workspace 1; }
-    Mod+2 { focus-workspace 2; }
-    Mod+3 { focus-workspace 3; }
-    Mod+4 { focus-workspace 4; }
-    Mod+5 { focus-workspace 5; }
-    Mod+6 { focus-workspace 6; }
-    Mod+7 { focus-workspace 7; }
-    Mod+8 { focus-workspace 8; }
-    Mod+9 { focus-workspace 9; }
-    Mod+0 { focus-workspace 10; }
-
-    // Перемещение окна на воркспейс
-    Mod+Shift+1 { move-window-to-workspace 1; }
-    Mod+Shift+2 { move-window-to-workspace 2; }
-    Mod+Shift+3 { move-window-to-workspace 3; }
-    Mod+Shift+4 { move-window-to-workspace 4; }
-    Mod+Shift+5 { move-window-to-workspace 5; }
-    Mod+Shift+6 { move-window-to-workspace 6; }
-    Mod+Shift+7 { move-window-to-workspace 7; }
-    Mod+Shift+8 { move-window-to-workspace 8; }
-    Mod+Shift+9 { move-window-to-workspace 9; }
-    Mod+Shift+0 { move-window-to-workspace 10; }
-
-    // Воркспейсы вверх/вниз (как Hyprland Shift+H/L)
-    Mod+Shift+H { focus-workspace-up; }
-    Mod+Shift+L { focus-workspace-down; }
-
-    Mod+Page_Up   { focus-workspace-up; }
-    Mod+Page_Down { focus-workspace-down; }
-
-    // Tab для переключения между воркспейсами
-    Mod+Tab { focus-workspace-previous; }
-
-    // ─── Overview (уникальная фича niri!) ────────────
-    // GNOME-like обзор всех окон и воркспейсов
+    // overview
     Mod+Grave { toggle-overview; }
 
-    // ─── Звук ────────────────────────────────────────
 
-    XF86AudioLowerVolume allow-when-locked=true { spawn "pamixer" "-u" "-d" "5"; }
-    XF86AudioRaiseVolume allow-when-locked=true { spawn "pamixer" "-u" "-i" "5"; }
-    XF86AudioMute        allow-when-locked=true { spawn "pamixer" "-m"; }
+    // workspaces
+    Mod+1 { focus-workspace "coding"; }
+    Mod+2 { focus-workspace "browsing"; }
+    Mod+3 { focus-workspace "chatting"; }
+    Mod+4 { focus-workspace "multimedia"; }
+    Mod+5 { focus-workspace "documents"; }
 
-    // Бэкап клавиши громкости
-    Mod+F10 { spawn "pamixer" "-u" "-d" "5"; }
-    Mod+F11 { spawn "pamixer" "-u" "-i" "5"; }
-
-    // ─── Яркость ─────────────────────────────────────
-
-    XF86MonBrightnessUp   { spawn "brightnessctl" "set" "5%+"; }
-    XF86MonBrightnessDown { spawn "brightnessctl" "set" "5%-"; }
-
-    // ─── Медиа ───────────────────────────────────────
-
-    XF86AudioPlay allow-when-locked=true { spawn "playerctl" "play-pause"; }
-    XF86AudioNext allow-when-locked=true { spawn "playerctl" "next"; }
-    XF86AudioPrev allow-when-locked=true { spawn "playerctl" "previous"; }
-
-    // ─── Система ─────────────────────────────────────
-
-    // Выключить мониторы
-    Mod+Shift+P { power-off-monitors; }
-
-    // Выход из niri
-    Mod+Shift+E { quit; }
-
-    // Screen transition (визуальный эффект)
-    Mod+Shift+Ctrl+T { do-screen-transition; }
 }

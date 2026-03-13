@@ -2,18 +2,12 @@
     "layer": "top",
     "position": "top",
     "height": 20,
-
-    //"width": 1280, // Waybar width
-
-    "spacing": 4, // Gaps between modules (4px)
-
+    "spacing": 4,
 
     "modules-left": [
-        "hyprland/workspaces",
-//        "custom/separator",
-//        "custom/uptime",
+        "niri/workspaces",
         "custom/separator",
-        "hyprland/language",
+        "niri/language",
         "custom/separator",
         "custom/dunst",
         "custom/separator",
@@ -21,7 +15,7 @@
     ],
 
     "modules-center": [
-        "clock",
+        "clock"
     ],
 
     "modules-right": [
@@ -41,41 +35,49 @@
         "custom/separator",
         "network",
         "custom/separator",
-        "tray",
+        "tray"
     ],
 
+    "niri/workspaces": {
+        "format": "{icon}",
+        "format-icons": {
+            "coding": "󰨞",
+            "browsing": "󰈹",
+            "chatting": "󰭹",
+            "multimedia": "󰎈",
+            "documents": "󰈙"
+        }
+    },
+
+    "niri/language": {
+        "format": "{}",
+        "format-en": "us",
+        "format-ru": "ru"
+    },
+
     "custom/separator": {
-        "format": "|",
+        "format": "|"
     },
 
     "custom/dunst": {
         "exec": "~/.config/waybar/scripts/dunst.sh",
         "on-click": "dunstctl set-paused toggle",
-        "restart-interval": 1,
-    },
-
-    "custom/uptime": {
-        "exec": "uptime -p | sed -E 's/up //; s/([0-9]+) hours?/\\1h/; s/([0-9]+) minutes?/\\1m/'",
-        "interval": 60,
-        "format": "󰺓   {}",
+        "restart-interval": 1
     },
 
     "mpris": {
-    "format": " ",
-    "format-alt": "{player_icon} {artist} - {title}",
-    "on-click": "mode",
-    "format-paused": "",
-    "format-stopped": "",
-    "player-icons": {
-        "default": "",
+        "format": " ",
+        "format-alt": "{player_icon} {artist} - {title}",
+        "on-click": "mode",
+        "format-paused": "",
+        "format-stopped": "",
+        "player-icons": {
+            "default": ""
+        },
+        "interval": 1,
+        "max-length": 50,
+        "tooltip": true
     },
-    "interval": 1,
-    "max-length": 50,
-    "tooltip": true
-},
-
-
-    // Modules configuration
 
     "idle_inhibitor": {
         "format": "{icon}",
@@ -87,103 +89,56 @@
         "tooltip-format-deactivated": "idle inhibitor: off"
     },
 
-    "hyprland/workspaces": {
-        "all-outputs": true,
-        "disable-scroll": false,
-        "all-outputs": true,
-        "warp-on-scroll": false,
-        "format": "{id}",
-        "persistent-workspaces": {
-             "*": 0,
-       }
-    },
-
-
-    "hyprland/language": {
-        "format": "{}",
-        "format-en": "us",
-        "format-ru": "ru",
-        "keyboard-name": "at-translated-set-2-keyboard"
-    },
-
-    "keyboard-state": {
-        "numlock": true,
-        "capslock": true,
-        "format": "{name} {icon}",
-        "format-icons": {
-            "locked": "",
-            "unlocked": ""
-        }
-    },
-
-    "hyprland/mode": {
-        "format": "<span style=\"italic\">{}</span>"
-    },
-
-
-
-    "idle_inhibitor": {
-        "format": "{icon}",
-        "format-icons": {
-            "activated": "",
-            "deactivated": ""
-        }
-    },
-    "tray": {
-        // "icon-size": 21,
-        "spacing": 5
-    },
-
-
-        "clock": {
+    "clock": {
         "interval": 1,
         "format": "{:%H:%M:%S}",
         "format-alt": "{:%A, %B %d, %Y (%R)}",
         "tooltip-format": "<tt><small>{calendar}</small></tt>",
         "calendar": {
-                    "mode"          : "year",
-                    "mode-mon-col"  : 2,
-                    "weeks-pos"     : "right",
-                    "on-scroll"     : 1,
-                    "on-click-right": "mode",
-                    "format": {
-                              "months":     "<span color='#ffead3'><b>{}</b></span>",
-                              "days":       "<span color='#ecc6d9'><b>{}</b></span>",
-                              "weeks":      "<span color='#99ffdd'><b>W{}</b></span>",
-                              "weekdays":   "<span color='#ffcc66'><b>{}</b></span>",
-                              "today":      "<span color='#ff6699'><b><u>{}</u></b></span>"
-                              }
-                    },
-        "actions":  {
-                    "on-click-right": "mode",
-                    "on-click-forward": "tz_up",
-                    "on-click-backward": "tz_down",
-                    "on-scroll-up": "shift_up",
-                    "on-scroll-down": "shift_down"
-                    }
+            "mode": "year",
+            "mode-mon-col": 2,
+            "weeks-pos": "right",
+            "on-scroll": 1,
+            "on-click-right": "mode",
+            "format": {
+                "months": "<span color='#ffead3'><b>{}</b></span>",
+                "days": "<span color='#ecc6d9'><b>{}</b></span>",
+                "weeks": "<span color='#99ffdd'><b>W{}</b></span>",
+                "weekdays": "<span color='#ffcc66'><b>{}</b></span>",
+                "today": "<span color='#ff6699'><b><u>{}</u></b></span>"
+            }
+        },
+        "actions": {
+            "on-click-right": "mode",
+            "on-click-forward": "tz_up",
+            "on-click-backward": "tz_down",
+            "on-scroll-up": "shift_up",
+            "on-scroll-down": "shift_down"
+        }
     },
+
     "cpu": {
-        "format": "{usage}% ",
+        "format": "{usage}% ",
         "tooltip": false,
-        "interval": 1,
+        "interval": 1
     },
+
     "memory": {
         "format": "{}% 󰍛",
-        "interval": 1,
+        "interval": 1
     },
+
     "temperature": {
-        // "thermal-zone": 2,
         "hwmon-path": "/sys/class/hwmon/hwmon4/temp1_input",
         "critical-threshold": 80,
-        // "format-critical": "{temperatureC}°C {icon}",
         "format": "{temperatureC}°C {icon}",
-        "format-icons": ["", "", ""],
-        "interval": 1,
+        "format-icons": ["", "", ""],
+        "interval": 1
     },
+
     "backlight": {
-        // "device": "acpi_video1",
         "format": "{percent}% {icon}",
-        "format-icons": ["", "", "", "", "", "", "", "", ""]
+        "format-icons": ["", "", "", "", "", "", "", "", ""]
     },
 
     "battery": {
@@ -193,47 +148,45 @@
             "critical": 5
         },
         "format": "{capacity}% {icon}",
-        "format-charging": "{capacity}% ",
-        "format-plugged": "{capacity}% ",
+        "format-charging": "{capacity}% ",
+        "format-plugged": "{capacity}% ",
         "format-alt": "{time} {icon}",
-        // "format-good": "", // An empty format will hide the module
-        // "format-full": "",
         "format-icons": ["󰂎", "󱊡", "󱊢", "󱊣"],
-        "interval": 1,
+        "interval": 1
     },
-
 
     "network": {
-        "interface": "wlp0s20f3", // (Optional) To force the use of this interface
-        "format-wifi": "({signalStrength}%) ",
-        "tooltip-format-wifi": "{ifname}: {ipaddr}/{cidr} ",
-        "format-ethernet": "{ipaddr}/{cidr} ",
-        "tooltip-format": "{ifname} via {gwaddr} ",
-        "format-linked": "{ifname} (No IP) ",
-        "format-disconnected": "",
-        "format-alt": "{essid}: ({bandwidthDownBits} {bandwidthUpBits}) ",
-        "interval": 1,
+        "interface": "wlp0s20f3",
+        "format-wifi": "({signalStrength}%) ",
+        "tooltip-format-wifi": "{ifname}: {ipaddr}/{cidr} ",
+        "format-ethernet": "{ipaddr}/{cidr} ",
+        "tooltip-format": "{ifname} via {gwaddr} ",
+        "format-linked": "{ifname} (No IP) ",
+        "format-disconnected": "",
+        "format-alt": "{essid}: ({bandwidthDownBits} {bandwidthUpBits}) ",
+        "interval": 1
     },
 
-
     "pulseaudio": {
-        // "scroll-step": 1, // %, can be a float
         "format": "{volume}% {icon}",
-        "format-bluetooth": "{volume}% {icon} {format_source}",
-        "format-bluetooth-muted": " {icon} {format_source}",
-        "format-muted": " {format_source}",
-        "format-source": "{volume}% ",
-        "format-source-muted": "",
+        "format-bluetooth": "{volume}% {icon} {format_source}",
+        "format-bluetooth-muted": " {icon} {format_source}",
+        "format-muted": " {format_source}",
+        "format-source": "{volume}% ",
+        "format-source-muted": "",
         "format-icons": {
-            "headphone": "",
-            "hands-free": " ",
-            "headset": " ",
-            "phone": "",
-            "portable": "",
-            "car": "",
-            "default": ["", "", ""]
+            "headphone": "",
+            "hands-free": " ",
+            "headset": " ",
+            "phone": "",
+            "portable": "",
+            "car": "",
+            "default": ["", "", ""]
         },
         "on-click": "pavucontrol"
     },
-}
 
+    "tray": {
+        "spacing": 5
+    }
+}
