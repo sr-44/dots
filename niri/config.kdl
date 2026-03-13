@@ -287,7 +287,6 @@ window-rule {
 window-rule {
     match app-id="Alacritty"
     draw-border-with-background false
-    opacity 0.92
 }
 
 // rounded windows
@@ -313,8 +312,6 @@ binds {
     Mod+E { spawn "thunar"; }
 
     Mod+D { spawn-sh "~/.config/rofi/launcher/launcher.sh"; }
-
-    Mod+A { spawn-sh "~/.config/rofi/switcher/launcher.sh"; }
 
     Mod+P { spawn-sh "~/.config/rofi/powermenu/powermenu.sh"; }
 
@@ -392,5 +389,6 @@ binds {
     Mod+3 { focus-workspace "chatting"; }
     Mod+4 { focus-workspace "multimedia"; }
     Mod+5 { focus-workspace "documents"; }
+    Mod+6 { focus-workspace 6; }
 
 }
