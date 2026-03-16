@@ -352,12 +352,14 @@ binds {
 
     Mod+F { fullscreen-window; }
 
-    Mod+S { toggle-window-floating; }
+    Mod+V { toggle-window-floating; }
 
     Mod+C { center-column; }
 
 
     // move
+    Mod+A { focus-column-left; }
+    Mod+S { focus-column-right; }
     Mod+H { focus-column-left; }
     Mod+L { focus-column-right; }
     Mod+J { focus-workspace-down; }
