@@ -166,11 +166,13 @@ spawn-at-startup "sh" "-c" "~/.config/hypr/scripts/battery-check"
 
 
 // WORKSPACES
-workspace "coding" {}
-workspace "browsing" {}
-workspace "chatting" {}
-workspace "documents" {}
-workspace "multimedia" {}
+workspace "ide" {}
+workspace "terminal" {}
+workspace "browser" {}
+workspace "chat" {}
+workspace "docs" {}
+workspace "service" {}
+workspace "media" {}
 
 
 
@@ -178,100 +180,129 @@ prefer-no-csd
 
 // WINDOW RULES
 
-// coding
+// ide
 window-rule {
     match app-id="jetbrains-phpstorm"
-    open-on-workspace "coding"
+    open-on-workspace "ide"
 }
 
+// terminal
 window-rule {
-    match app-id="postman"
-    open-on-workspace "coding"
+    match app-id="Alacritty"
+    open-on-workspace "terminal"
 }
 
 
-// browsing
+// browser
 
 window-rule {
     match app-id="zen"
-    open-on-workspace "browsing"
+    open-on-workspace "browser"
 }
 
 window-rule {
     match app-id="firefox"
-    open-on-workspace "browsing"
+    open-on-workspace "browser"
 }
 
 window-rule {
     match app-id="chromium"
-    open-on-workspace "browsing"
+    open-on-workspace "browser"
 }
 
 window-rule {
     match app-id="google-chrome"
-    open-on-workspace "browsing"
+    open-on-workspace "browser"
 }
 
 
-// chatting
+// chat
 window-rule {
     match app-id="org.telegram.desktop"
-    open-on-workspace "chatting"
+    open-on-workspace "chat"
 }
 window-rule {
     match app-id="com.ayugram.desktop"
-    open-on-workspace "chatting"
+    open-on-workspace "chat"
 }
 
 window-rule {
     match app-id="discord"
-    open-on-workspace "chatting"
+    open-on-workspace "chat"
 }
 
 window-rule {
     match app-id="teams-for-linux"
-    open-on-workspace "chatting"
+    open-on-workspace "chat"
 }
 
 
-// multimedia
+// service
+window-rule {
+    match app-id="postman"
+    open-on-workspace "service"
+}
+
+window-rule {
+    match app-id="org.gnome.Calendar"
+    open-on-workspace "service"
+}
+
+window-rule {
+    match app-id="org.gnome.Calculator"
+    open-on-workspace "service"
+}
+
+window-rule {
+    match app-id="org.kde.kalendar"
+    open-on-workspace "service"
+}
+
+window-rule {
+    match app-id="org.kde.kcalc"
+    open-on-workspace "service"
+}
+
 window-rule {
     match app-id="com.obsproject.Studio"
-    open-on-workspace "multimedia"
+    open-on-workspace "service"
 }
 
+// media
 window-rule {
     match app-id="yandexmusic"
-    open-on-workspace "multimedia"
+    open-on-workspace "media"
 }
 
 
-// documents
+// docs
 
 window-rule {
     match app-id="obsidian"
-    open-on-workspace "documents"
+    open-on-workspace "docs"
 }
 
 window-rule {
     match app-id="onlyoffice-desktopeditors"
-    open-on-workspace "documents"
+    open-on-workspace "docs"
 }
 
 window-rule {
     match app-id="libreoffice-startcenter"
-    open-on-workspace "documents"
+    open-on-workspace "docs"
 }
 
 
 // floating apps
 window-rule {
     match app-id="blueman-manager"
+    open-on-workspace "service"
     open-floating true
 }
 
 window-rule {
     match app-id="pavucontrol"
+    open-on-workspace "service"
     open-floating true
 }
 
@@ -386,18 +417,20 @@ binds {
 
 
     // workspaces
-    Mod+1 { focus-workspace "coding"; }
-    Mod+2 { focus-workspace "browsing"; }
-    Mod+3 { focus-workspace "chatting"; }
-    Mod+4 { focus-workspace "documents"; }
-    Mod+5 { focus-workspace "multimedia"; }
-    Mod+6 { focus-workspace 6; }
+    Mod+1 { focus-workspace "ide"; }
+    Mod+2 { focus-workspace "terminal"; }
+    Mod+3 { focus-workspace "browser"; }
+    Mod+4 { focus-workspace "chat"; }
+    Mod+5 { focus-workspace "docs"; }
+    Mod+6 { focus-workspace "service"; }
+    Mod+7 { focus-workspace "media"; }
 
-    Mod+Shift+1 { move-window-to-workspace "coding"; }
-    Mod+Shift+2 { move-window-to-workspace "browsing"; }
-    Mod+Shift+3 { move-window-to-workspace "chatting"; }
-    Mod+Shift+4 { move-window-to-workspace "documents"; }
-    Mod+Shift+5 { move-window-to-workspace "multimedia"; }
-    Mod+Shift+6 { move-window-to-workspace 6; }
+    Mod+Shift+1 { move-window-to-workspace "ide"; }
+    Mod+Shift+2 { move-window-to-workspace "terminal"; }
+    Mod+Shift+3 { move-window-to-workspace "browser"; }
+    Mod+Shift+4 { move-window-to-workspace "chat"; }
+    Mod+Shift+5 { move-window-to-workspace "docs"; }
+    Mod+Shift+6 { move-window-to-workspace "service"; }
+    Mod+Shift+7 { move-window-to-workspace "media"; }
 
 }

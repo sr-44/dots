@@ -41,11 +41,13 @@
     "niri/workspaces": {
         "format": "{icon}",
         "format-icons": {
-            "coding": "󰨞",
-            "browsing": "󰈹",
-            "chatting": "󰭹",
-            "documents": "󰈙",
-            "multimedia": "󰎈"
+            "ide": "󰨞",
+            "terminal": "",
+            "browser": "󰖟",
+            "chat": "󰭹",
+            "docs": "󰈙",
+            "service": "󰒓",
+            "media": "󰎈"
         }
     },
 
