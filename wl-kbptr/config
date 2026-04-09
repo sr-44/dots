@@ -1,0 +1,40 @@
+# wl-kbptr — управление курсором с клавиатуры
+# Catppuccin Mocha
+#
+# Symlink: ln -sf ~/dots/wl-kbptr/ ~/.config/wl-kbptr
+#
+# Режимы по цепочке: сначала tile (грид с буквами), потом bisect (доводка
+# половинками), потом click — клик в выбранной точке.
+# Кнопка клика задаётся флагом -o mode_click.button=left|right|middle.
+
+[general]
+home_row_keys=asdfghjkvbn
+modes=tile,bisect,click
+cancellation_status_code=0
+
+[mode_tile]
+label_color=#cdd6f4ff
+label_select_color=#f9e2afff
+unselectable_bg_color=#1e1e2e88
+selectable_bg_color=#89b4fa22
+selectable_border_color=#89b4faaa
+label_font_family=JetBrains Mono
+label_font_size=10 50% 100
+label_symbols=asdfghjklqwertyuiopzxcvbnm
+
+[mode_bisect]
+label_color=#cdd6f4ff
+label_font_size=20
+label_font_family=JetBrains Mono
+label_padding=12
+pointer_size=20
+pointer_color=#f38ba8dd
+unselectable_bg_color=#1e1e2e66
+even_area_bg_color=#89b4fa33
+even_area_border_color=#89b4faaa
+odd_area_bg_color=#b4befe33
+odd_area_border_color=#b4befeaa
+history_border_color=#45475a99
+
+[mode_click]
+button=left

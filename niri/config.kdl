@@ -354,6 +354,11 @@ binds {
 
     Mod+O { spawn "slurp"; }
 
+    // keyboard pointer (wl-kbptr): tile -> bisect -> click
+    Mod+M { spawn "wl-kbptr" "-o" "mode_click.button=left"; }
+    Mod+Shift+M { spawn "wl-kbptr" "-o" "mode_click.button=right"; }
+    Mod+Ctrl+M { spawn "wl-kbptr" "-o" "mode_click.button=middle"; }
+
 
     // screenshots
     Print { screenshot; }
