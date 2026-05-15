@@ -69,11 +69,11 @@
     },
 
     "mpris": {
-        "format": " ",
+        "format": " ",
         "format-alt": "{player_icon} {artist} - {title}",
         "on-click": "mode",
-        "format-paused": "",
-        "format-stopped": "",
+        "format-paused": "",
+        "format-stopped": "",
         "player-icons": {
             "default": ""
         },
@@ -121,7 +121,7 @@
     },
 
     "cpu": {
-        "format": "{usage}% ",
+        "format": "{usage}% ",
         "tooltip": false,
         "interval": 1
     },
@@ -135,13 +135,13 @@
         "hwmon-path": "/sys/class/hwmon/hwmon4/temp1_input",
         "critical-threshold": 80,
         "format": "{temperatureC}°C {icon}",
-        "format-icons": ["", "", ""],
+        "format-icons": ["", "", ""],
         "interval": 1
     },
 
     "backlight": {
         "format": "{percent}% {icon}",
-        "format-icons": ["", "", "", "", "", "", "", "", ""]
+        "format-icons": ["", "", "", "", "", "", "", "", ""]
     },
 
     "battery": {
@@ -151,8 +151,8 @@
             "critical": 5
         },
         "format": "{capacity}% {icon}",
-        "format-charging": "{capacity}% ",
-        "format-plugged": "{capacity}% ",
+        "format-charging": "{capacity}% ",
+        "format-plugged": "{capacity}% ",
         "format-alt": "{time} {icon}",
         "format-icons": ["󰂎", "󱊡", "󱊢", "󱊣"],
         "interval": 1
@@ -160,31 +160,31 @@
 
     "network": {
         "interface": "wlp0s20f3",
-        "format-wifi": "({signalStrength}%) ",
+        "format-wifi": "({signalStrength}%) ",
         "tooltip-format-wifi": "{ifname}: {ipaddr}/{cidr} ",
-        "format-ethernet": "{ipaddr}/{cidr} ",
+        "format-ethernet": "{ipaddr}/{cidr} ",
         "tooltip-format": "{ifname} via {gwaddr} ",
-        "format-linked": "{ifname} (No IP) ",
-        "format-disconnected": "",
-        "format-alt": "{essid}: ({bandwidthDownBits} {bandwidthUpBits}) ",
+        "format-linked": "{ifname} (No IP) ",
+        "format-disconnected": "",
+        "format-alt": "{essid}: ({bandwidthDownBits} {bandwidthUpBits}) ",
         "interval": 1
     },
 
     "pulseaudio": {
         "format": "{volume}% {icon}",
-        "format-bluetooth": "{volume}% {icon} {format_source}",
-        "format-bluetooth-muted": " {icon} {format_source}",
-        "format-muted": " {format_source}",
-        "format-source": "{volume}% ",
-        "format-source-muted": "",
+        "format-bluetooth": "{volume}% {icon} {format_source}",
+        "format-bluetooth-muted": " {icon} {format_source}",
+        "format-muted": " {format_source}",
+        "format-source": "{volume}% ",
+        "format-source-muted": "",
         "format-icons": {
-            "headphone": "",
-            "hands-free": " ",
-            "headset": " ",
-            "phone": "",
-            "portable": "",
-            "car": "",
-            "default": ["", "", ""]
+            "headphone": "",
+            "hands-free": " ",
+            "headset": " ",
+            "phone": "",
+            "portable": "",
+            "car": "",
+            "default": ["", "", ""]
         },
         "on-click": "pavucontrol"
     },
