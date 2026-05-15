@@ -9,7 +9,7 @@
         "custom/separator",
         "niri/language",
         "custom/separator",
-        "custom/dunst",
+        "custom/swaync",
         "custom/separator",
         "mpris"
     ],
@@ -61,9 +61,10 @@
         "format": "|"
     },
 
-    "custom/dunst": {
-        "exec": "~/.config/waybar/scripts/dunst.sh",
-        "on-click": "dunstctl set-paused toggle",
+    "custom/swaync": {
+        "exec": "~/.config/waybar/scripts/swaync.sh",
+        "on-click": "swaync-client -d -sw",
+        "on-click-right": "swaync-client -t -sw",
         "restart-interval": 1
     },
 

@@ -1,0 +1,297 @@
+/* Catppuccin Mocha for swaync, matching the rest of the dotfiles. */
+
+* {
+  font-family: "JetBrainsMono Nerd Font", "JetBrains Mono", "Apple Emoji";
+  font-size: 14px;
+}
+
+:root {
+  --mocha-base:     #1e1e2e;
+  --mocha-mantle:   #181825;
+  --mocha-crust:    #11111b;
+  --mocha-surface0: #313244;
+  --mocha-surface1: #45475a;
+  --mocha-overlay0: #6c7086;
+  --mocha-text:     #cdd6f4;
+  --mocha-subtext0: #a6adc8;
+  --mocha-blue:     #89b4fa;
+  --mocha-lavender: #b4befe;
+  --mocha-red:      #f38ba8;
+  --mocha-yellow:   #f9e2af;
+  --mocha-green:    #a6e3a1;
+
+  --noti-bg: 30, 30, 46;
+  --noti-bg-alpha: 0.98;
+  --noti-bg-darker: #181825;
+  --noti-bg-hover: #313244;
+  --noti-bg-focus: rgba(69, 71, 90, 0.6);
+  --noti-border-color: #89b4fa;
+  --noti-close-bg: #45475a;
+  --noti-close-bg-hover: #f38ba8;
+  --text-color: #cdd6f4;
+  --text-color-disabled: #6c7086;
+  --bg-selected: #89b4fa;
+  --cc-bg: rgba(24, 24, 37, 0.92);
+
+  --border: 2px solid var(--mocha-blue);
+  --border-radius: 12px;
+  --notification-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+}
+
+@define-color cc-bg rgba(24, 24, 37, 0.92);
+@define-color noti-border-color #89b4fa;
+@define-color noti-bg rgba(30, 30, 46, 0.98);
+@define-color noti-bg-opaque #1e1e2e;
+@define-color noti-bg-darker #181825;
+@define-color noti-bg-hover #313244;
+@define-color noti-bg-hover-opaque #313244;
+@define-color noti-bg-focus rgba(69, 71, 90, 0.6);
+@define-color noti-close-bg #45475a;
+@define-color noti-close-bg-hover #f38ba8;
+@define-color text-color #cdd6f4;
+@define-color text-color-disabled #6c7086;
+@define-color bg-selected #89b4fa;
+
+notificationwindow,
+blankwindow {
+  background: transparent;
+}
+
+/* ── Notification card ──────────────────────────────────────────── */
+
+.notification-row {
+  outline: none;
+  background: none;
+}
+
+.notification-row .notification-background {
+  padding: 6px 10px;
+}
+
+.notification-row .notification-background .notification {
+  border-radius: var(--border-radius);
+  border: var(--border);
+  background: var(--mocha-base);
+  box-shadow: var(--notification-shadow);
+  padding: 0;
+  margin: 0;
+}
+
+.notification-row .notification-background .notification.critical {
+  border-color: var(--mocha-red);
+}
+
+.notification-row .notification-background .notification.low {
+  border-color: var(--mocha-overlay0);
+}
+
+.notification-row .notification-background .notification > .notification-content {
+  padding: 10px 12px;
+  margin: 0;
+}
+
+.notification-row .notification-background .notification .notification-content .summary {
+  font-weight: 700;
+  color: var(--mocha-text);
+  font-size: 14px;
+  text-shadow: none;
+}
+
+.notification-row .notification-background .notification .notification-content .time {
+  color: var(--mocha-overlay0);
+  font-size: 12px;
+  text-shadow: none;
+  margin-right: 24px;
+}
+
+.notification-row .notification-background .notification .notification-content .body {
+  color: var(--mocha-subtext0);
+  font-size: 13px;
+  text-shadow: none;
+  margin-top: 4px;
+}
+
+.notification-row .notification-background .notification .notification-content .app-name {
+  color: var(--mocha-blue);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.notification-row .notification-background .notification .notification-content image,
+.notification-row .notification-background .notification .notification-content .image {
+  border-radius: 8px;
+  margin-right: 10px;
+}
+
+/* ── Close (×) button ───────────────────────────────────────────── */
+
+.close-button {
+  background: var(--mocha-surface1);
+  color: var(--mocha-text);
+  border-radius: 100%;
+  border: none;
+  padding: 0;
+  margin: 8px 8px 0 0;
+  min-width: 22px;
+  min-height: 22px;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+.close-button:hover {
+  background: var(--mocha-red);
+  color: var(--mocha-base);
+  transition: background 0.15s ease-in-out;
+}
+
+/* ── Action buttons (the whole reason we switched) ──────────────── */
+
+.notification-action {
+  border-radius: 8px;
+  border: 1px solid var(--mocha-surface1);
+  background: var(--mocha-surface0);
+  color: var(--mocha-text);
+  font-weight: 600;
+  padding: 6px 10px;
+  margin: 4px 4px 0 0;
+  text-shadow: none;
+  box-shadow: none;
+  transition: background 0.12s ease-in-out, border-color 0.12s ease-in-out;
+}
+
+.notification-action:hover {
+  background: var(--mocha-blue);
+  color: var(--mocha-base);
+  border-color: var(--mocha-blue);
+}
+
+.notification-action:active {
+  background: var(--mocha-lavender);
+  color: var(--mocha-base);
+}
+
+.notification-default-action {
+  border-radius: var(--border-radius);
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.notification-default-action:hover {
+  background: var(--mocha-surface0);
+}
+
+/* ── Inline reply ───────────────────────────────────────────────── */
+
+.inline-reply {
+  margin-top: 6px;
+}
+
+.inline-reply .inline-reply-entry {
+  background: var(--mocha-mantle);
+  color: var(--mocha-text);
+  border: 1px solid var(--mocha-surface1);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.inline-reply .inline-reply-button {
+  background: var(--mocha-blue);
+  color: var(--mocha-base);
+  border-radius: 8px;
+  border: none;
+  padding: 6px 10px;
+  margin-left: 6px;
+  font-weight: 600;
+}
+
+.inline-reply .inline-reply-button:hover {
+  background: var(--mocha-lavender);
+}
+
+/* ── Progress bar (download/copy/etc) ───────────────────────────── */
+
+progressbar,
+progressbar > trough {
+  border-radius: 6px;
+  background: var(--mocha-surface0);
+  border: none;
+  min-height: 6px;
+}
+
+progressbar > trough > progress {
+  background: var(--mocha-blue);
+  border-radius: 6px;
+}
+
+/* ── Control center (panel) ─────────────────────────────────────── */
+
+.control-center {
+  background: var(--mocha-base);
+  border: 2px solid var(--mocha-blue);
+  border-radius: var(--border-radius);
+  box-shadow: var(--notification-shadow);
+  margin: 8px;
+  padding: 10px;
+}
+
+.control-center-list {
+  background: transparent;
+}
+
+.control-center .notification-row .notification-background .notification {
+  border: 1px solid var(--mocha-surface1);
+  background: var(--mocha-mantle);
+}
+
+.widget-title {
+  color: var(--mocha-text);
+  font-weight: 700;
+  font-size: 15px;
+  margin: 6px 4px;
+}
+
+.widget-title > button {
+  background: var(--mocha-surface0);
+  color: var(--mocha-text);
+  border-radius: 8px;
+  border: none;
+  padding: 4px 10px;
+  font-weight: 600;
+}
+
+.widget-title > button:hover {
+  background: var(--mocha-red);
+  color: var(--mocha-base);
+}
+
+.widget-dnd {
+  color: var(--mocha-text);
+  margin: 6px 4px;
+}
+
+.widget-dnd > switch {
+  background: var(--mocha-surface1);
+  border-radius: 12px;
+  border: none;
+  min-width: 44px;
+  min-height: 22px;
+}
+
+.widget-dnd > switch:checked {
+  background: var(--mocha-blue);
+}
+
+.widget-dnd > switch slider {
+  background: var(--mocha-text);
+  border-radius: 100%;
+  margin: 2px;
+  min-width: 18px;
+  min-height: 18px;
+}
+
+.floating-notifications.background .notification-row {
+  margin-bottom: 6px;
+}

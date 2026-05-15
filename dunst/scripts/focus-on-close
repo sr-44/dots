@@ -1,0 +1,279 @@
+#!/usr/bin/env python3
+"""Focus the originating app when a notification action is invoked.
+
+Listens to the session D-Bus for `org.freedesktop.Notifications.Notify`
+method calls (to learn id → app_name) and `ActionInvoked` signals (to
+act on user clicks). swaync does not give a reliable `NotificationClosed`
+reason, so we rely on ActionInvoked, which fires only when the user
+actually clicks a notification action or the body with a default action.
+
+Action keys "dismiss" / "close" are treated as "just close, don't focus".
+Any other key triggers a focus of the sender app.
+
+The path lives under ~/dots/dunst/scripts/ for historical reasons; this
+script is daemon-agnostic.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import subprocess
+import sys
+from typing import Optional
+
+DEBUG = os.environ.get("DUNST_FOCUS_DEBUG", "0") == "1"
+
+IGNORE_APPS = {
+    "notify-send",
+    "dunst",
+    "swaync",
+    "swayidle",
+    "hypridle",
+    "hyprlock",
+    "swaylock",
+    "",
+}
+
+
+def log(*args: object) -> None:
+    if DEBUG:
+        print("[focus-on-close]", *args, file=sys.stderr, flush=True)
+
+
+def norm(s: Optional[str]) -> str:
+    return "".join(c for c in (s or "").lower() if c.isalnum())
+
+
+# ── Window focusing per compositor ──────────────────────────────────────
+
+
+def find_niri_window(app_name: str) -> Optional[int]:
+    try:
+        out = subprocess.run(
+            ["niri", "msg", "--json", "windows"],
+            capture_output=True, text=True, timeout=2,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if out.returncode != 0:
+        return None
+    try:
+        windows = json.loads(out.stdout)
+    except json.JSONDecodeError:
+        return None
+
+    tokens = [t for t in (norm(p) for p in app_name.split()) if t]
+    if not tokens:
+        return None
+
+    def all_in(field: Optional[str]) -> bool:
+        n = norm(field)
+        return all(t in n for t in tokens)
+
+    primary = [w for w in windows if all_in(w.get("app_id"))]
+    fallback = [w for w in windows if all_in(w.get("title"))]
+    pool = primary or fallback
+    if not pool:
+        return None
+
+    def ts(w: dict) -> tuple:
+        t = w.get("focus_timestamp") or {}
+        return (t.get("secs", 0), t.get("nanos", 0))
+
+    pool.sort(key=ts, reverse=True)
+    return pool[0]["id"]
+
+
+def find_hyprland_window(app_name: str) -> Optional[str]:
+    try:
+        out = subprocess.run(
+            ["hyprctl", "clients", "-j"],
+            capture_output=True, text=True, timeout=2,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if out.returncode != 0:
+        return None
+    try:
+        clients = json.loads(out.stdout)
+    except json.JSONDecodeError:
+        return None
+
+    tokens = [t for t in (norm(p) for p in app_name.split()) if t]
+    if not tokens:
+        return None
+
+    def all_in(field: Optional[str]) -> bool:
+        n = norm(field)
+        return all(t in n for t in tokens)
+
+    primary = [
+        c for c in clients
+        if all_in(c.get("class")) or all_in(c.get("initialClass"))
+    ]
+    fallback = [
+        c for c in clients
+        if all_in(c.get("title")) or all_in(c.get("initialTitle"))
+    ]
+    pool = primary or fallback
+    if not pool:
+        return None
+    pool.sort(key=lambda c: c.get("focusHistoryID", 9999))
+    return pool[0]["address"]
+
+
+def focus_app(app_name: str) -> None:
+    if not app_name or app_name.lower() in IGNORE_APPS:
+        log("ignore app", repr(app_name))
+        return
+
+    if os.environ.get("NIRI_SOCKET"):
+        wid = find_niri_window(app_name)
+        if wid is not None:
+            subprocess.run(
+                ["niri", "msg", "action", "focus-window", "--id", str(wid)],
+                capture_output=True,
+            )
+            log(f"niri focus app={app_name!r} → window id={wid}")
+        else:
+            log(f"niri: no window matches app={app_name!r}")
+        return
+
+    if os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"):
+        addr = find_hyprland_window(app_name)
+        if addr:
+            subprocess.run(
+                ["hyprctl", "dispatch", "focuswindow", f"address:{addr}"],
+                capture_output=True,
+            )
+            log(f"hypr focus app={app_name!r} → addr={addr}")
+        else:
+            log(f"hypr: no window matches app={app_name!r}")
+        return
+
+    log("no supported compositor detected")
+
+
+# ── D-Bus message parser ────────────────────────────────────────────────
+
+HEADER_NOTIFY = re.compile(
+    r"^method call .*serial=(\d+).*member=Notify"
+)
+HEADER_RETURN = re.compile(
+    r"^method return .*reply_serial=(\d+)"
+)
+HEADER_ACTION = re.compile(
+    r"^signal .*member=ActionInvoked"
+)
+LINE_STRING = re.compile(r'^\s+string "(.*)"$')
+LINE_UINT32 = re.compile(r"^\s+uint32 (\d+)$")
+
+DISMISS_KEYS = {"dismiss", "close", "ignore", "cancel"}
+
+
+def run() -> int:
+    # No interface filter — we need method_return frames (which have no
+    # interface header) to map serial → notification id.
+    proc = subprocess.Popen(
+        ["dbus-monitor", "--session"],
+        stdout=subprocess.PIPE, text=True, bufsize=1,
+    )
+    assert proc.stdout is not None
+
+    # serial of a Notify method_call → app_name (waiting for return)
+    pending_calls: dict[int, str] = {}
+    # notification id → app_name (waiting for close)
+    id_to_app: dict[int, str] = {}
+
+    state: Optional[str] = None
+    # state context
+    ctx_serial: Optional[int] = None
+    ctx_app_seen: bool = False
+    ctx_reply_serial: Optional[int] = None
+    ctx_action_id: Optional[int] = None
+
+    for line in proc.stdout:
+        line = line.rstrip("\n")
+        if not line:
+            continue
+
+        # New top-level frame?
+        m = HEADER_NOTIFY.match(line)
+        if m:
+            state = "notify"
+            ctx_serial = int(m.group(1))
+            ctx_app_seen = False
+            continue
+        m = HEADER_RETURN.match(line)
+        if m:
+            reply = int(m.group(1))
+            if reply in pending_calls:
+                state = "return"
+                ctx_reply_serial = reply
+            else:
+                state = None
+            continue
+        m = HEADER_ACTION.match(line)
+        if m:
+            state = "action"
+            ctx_action_id = None
+            continue
+        if line.startswith(("method call ", "method return ", "signal ", "error ")):
+            state = None
+            continue
+
+        # Body lines for the current frame
+        if state == "notify" and not ctx_app_seen:
+            ms = LINE_STRING.match(line)
+            if ms and ctx_serial is not None:
+                pending_calls[ctx_serial] = ms.group(1)
+                ctx_app_seen = True
+                # cap memory; very unlikely to grow but be safe
+                if len(pending_calls) > 256:
+                    # drop oldest
+                    oldest = next(iter(pending_calls))
+                    pending_calls.pop(oldest, None)
+                state = None
+            continue
+
+        if state == "return" and ctx_reply_serial is not None:
+            mu = LINE_UINT32.match(line)
+            if mu:
+                nid = int(mu.group(1))
+                app = pending_calls.pop(ctx_reply_serial, None)
+                if app is not None:
+                    id_to_app[nid] = app
+                    log(f"learned id={nid} app={app!r}")
+                    if len(id_to_app) > 256:
+                        oldest = next(iter(id_to_app))
+                        id_to_app.pop(oldest, None)
+                state = None
+            continue
+
+        if state == "action":
+            if ctx_action_id is None:
+                mu = LINE_UINT32.match(line)
+                if mu:
+                    ctx_action_id = int(mu.group(1))
+                    continue
+            else:
+                ms = LINE_STRING.match(line)
+                if ms:
+                    key = ms.group(1)
+                    nid = ctx_action_id
+                    app = id_to_app.get(nid)
+                    log(f"action id={nid} key={key!r} app={app!r}")
+                    if app and key.lower() not in DISMISS_KEYS:
+                        focus_app(app)
+                    state = None
+
+    return proc.wait()
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(run())
+    except KeyboardInterrupt:
+        sys.exit(0)

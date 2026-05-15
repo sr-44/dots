@@ -156,7 +156,8 @@ environment {
 
 
 // STARTUP
-spawn-at-startup "dunst"
+spawn-at-startup "swaync"
+spawn-at-startup "sh" "-c" "~/.config/dunst/scripts/focus-on-close"
 spawn-at-startup "waybar"
 spawn-at-startup "hypridle"
 spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
@@ -350,7 +351,7 @@ binds {
 
     Mod+B { spawn-sh "~/.config/hypr/scripts/bar"; }
 
-    Mod+N { spawn "dunstctl" "set-paused" "toggle"; }
+    Mod+N { spawn "swaync-client" "-d" "-sw"; }
 
     Mod+O { spawn "slurp"; }
 
