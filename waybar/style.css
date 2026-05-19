@@ -81,7 +81,8 @@ button:hover {
 #idle_inhibitor,
 #scratchpad,
 #mpd,
-#mpris {
+#mpris,
+#custom-swaync {
     padding: 0 10px;
     color: #cdd6f4;
 }
