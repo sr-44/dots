@@ -1,0 +1,277 @@
+#!/usr/bin/env bash
+# monitors — interactive, dynamic monitor configurator for niri.
+#
+# Applies changes at runtime via `niri msg output` (temporary, no config edit).
+# Nothing is hardcoded: output names, available modes, scales and positions are
+# all discovered live from `niri msg --json outputs`, so it works with any
+# connector name (eDP-1, HDMI-A-1, DP-2, …) and any mode (1080p, 1440p, 4K, …).
+#
+# UI: fzf when run in a terminal, rofi when run without a TTY (e.g. a keybind).
+#
+# Usage:
+#   monitors                      # interactive menu
+#   monitors external-only        # preset: only external outputs on
+#   monitors internal-only        # preset: only the built-in panel on
+#   monitors extend               # preset: every connected output on
+#   monitors status               # print current state and exit
+
+set -uo pipefail
+
+command -v niri >/dev/null || { echo "niri not found" >&2; exit 1; }
+command -v jq   >/dev/null || { echo "jq not found"   >&2; exit 1; }
+niri msg outputs >/dev/null 2>&1 || { echo "niri is not running / not reachable" >&2; exit 1; }
+
+# ----------------------------------------------------------------------------
+# UI backend: terminal (fzf) vs GUI (rofi/wofi). Pick GUI when there's no TTY.
+# ----------------------------------------------------------------------------
+GUI=0
+{ [ -t 0 ] && [ -t 1 ]; } || GUI=1
+
+# rofi theme matching the rest of the system (Catppuccin Mocha). Falls back to
+# the default theme gracefully if the file is missing.
+ROFI_THEME="$HOME/.config/rofi/monitors/style.rasi"
+rofi_theme=(); [ -f "$ROFI_THEME" ] && rofi_theme=(-theme "$ROFI_THEME")
+
+pick() { # $1=prompt ; options on stdin ; selection on stdout (empty if cancelled)
+  local prompt="$1"
+  if [ "$GUI" = 1 ]; then
+    if   command -v rofi >/dev/null; then rofi -dmenu -i -p "$prompt" "${rofi_theme[@]}"
+    elif command -v wofi >/dev/null; then wofi --dmenu -p "$prompt"
+    else cat; fi
+  else
+    fzf --prompt="$prompt > " --height=45% --reverse --no-multi
+  fi
+}
+
+ask() { # $1=prompt ; typed value on stdout
+  local prompt="$1" v
+  if [ "$GUI" = 1 ]; then
+    if   command -v rofi >/dev/null; then rofi -dmenu -p "$prompt" "${rofi_theme[@]}" </dev/null
+    elif command -v wofi >/dev/null; then wofi --dmenu -p "$prompt" </dev/null
+    fi
+  else
+    read -rp "$prompt: " v; printf '%s' "$v"
+  fi
+}
+
+notify() { # $1=text
+  if [ "$GUI" = 1 ]; then
+    if   command -v notify-send >/dev/null; then notify-send "  Monitors" "$1"
+    elif command -v rofi        >/dev/null; then rofi -e "$1" "${rofi_theme[@]}"
+    fi
+  else
+    printf '%s\n' "$1"
+  fi
+}
+
+# ----------------------------------------------------------------------------
+# niri helpers
+# ----------------------------------------------------------------------------
+OUTPUTS_JSON=""
+refresh() { OUTPUTS_JSON="$(niri msg --json outputs)"; }
+
+# Treat built-in panels as "internal". Everything else is "external".
+is_internal() { [[ "$1" =~ ^(eDP|LVDS|DSI|DPI) ]]; }
+
+names()          { jq -r 'keys[]'                       <<<"$OUTPUTS_JSON"; }
+is_on()          { jq -e --arg o "$1" '.[$o].current_mode != null' <<<"$OUTPUTS_JSON" >/dev/null; }
+label()          { jq -r --arg o "$1" '.[$o] | "\(.make) \(.model)" | gsub("^ +| +$";"")' <<<"$OUTPUTS_JSON"; }
+
+# Build a niri mode string "WxH@rrr.fff" from a JSON mode object index.
+mode_string() { # $1=output $2=mode_index
+  jq -r --arg o "$1" --argjson i "$2" '
+    .[$o].modes[$i] as $m
+    | "\($m.width)x\($m.height)@\(($m.refresh_rate/1000)*1000|round/1000)"
+  ' <<<"$OUTPUTS_JSON"
+}
+
+apply() { # forwards to niri, surfaces errors
+  local out
+  if ! out="$(niri msg output "$@" 2>&1)"; then
+    notify "Failed: niri msg output $*\n$out"
+    return 1
+  fi
+}
+
+# ----------------------------------------------------------------------------
+# Status
+# ----------------------------------------------------------------------------
+status_text() {
+  jq -r '
+    to_entries[]
+    | .key as $name | .value as $o
+    | ($o.current_mode != null) as $on
+    | "• \($name)  [\(if $on then "ON" else "off" end)]  \($o.make) \($o.model)"
+      + (if $on then
+          "\n    \($o.logical.width)x\($o.logical.height)" +
+          "  @ \(([$o.modes[$o.current_mode].refresh_rate/1000*1000|round/1000][0]))Hz" +
+          "  scale \($o.logical.scale)" +
+          "  pos \($o.logical.x),\($o.logical.y)" +
+          (if $o.vrr_enabled then "  vrr" else "" end)
+        else "" end)
+  ' <<<"$OUTPUTS_JSON"
+}
+
+# ----------------------------------------------------------------------------
+# Presets
+# ----------------------------------------------------------------------------
+preset() { # $1 = external-only | internal-only | extend
+  refresh
+  local want=() drop=() n
+  while IFS= read -r n; do
+    case "$1" in
+      external-only) if is_internal "$n"; then drop+=("$n"); else want+=("$n"); fi ;;
+      internal-only) if is_internal "$n"; then want+=("$n"); else drop+=("$n"); fi ;;
+      extend)        want+=("$n") ;;
+    esac
+  done < <(names)
+
+  if [ "${#want[@]}" -eq 0 ]; then
+    notify "No matching outputs for preset '$1' — nothing turned on (refusing to blank all screens)."
+    return 1
+  fi
+
+  # Turn on the targets first (so we never momentarily have zero active outputs),
+  # let niri auto-pick best mode/scale/position, then turn off the rest.
+  for n in "${want[@]}"; do
+    apply "$n" on
+    apply "$n" mode auto
+    apply "$n" scale auto
+    apply "$n" position auto
+  done
+  for n in "${drop[@]}"; do apply "$n" off; done
+
+  refresh
+  notify "Preset '$1' applied:\n$(status_text)"
+}
+
+# ----------------------------------------------------------------------------
+# Per-output configuration
+# ----------------------------------------------------------------------------
+choose_output() {
+  refresh
+  local line out mark
+  # "● HDMI-A-1  (Philips …)" — output name is the 2nd field, no spaces in it.
+  line="$(while IFS= read -r out; do
+            is_on "$out" && mark="●" || mark="○"
+            printf '%s %s  (%s)\n' "$mark" "$out" "$(label "$out")"
+          done < <(names) | pick "Output")"
+  [ -z "$line" ] && return
+  line="${line#* }"        # drop the ●/○ marker
+  printf '%s' "${line%% *}" # first token is the output name
+}
+
+set_mode() { # $1=output
+  refresh
+  local count idx i pref cur disp sel
+  count="$(jq --arg o "$1" '.[$o].modes | length' <<<"$OUTPUTS_JSON")"
+  cur="$(jq -r --arg o "$1" '.[$o].current_mode // -1' <<<"$OUTPUTS_JSON")"
+  {
+    echo "auto (let niri choose)"
+    for ((i=0; i<count; i++)); do
+      pref="$(jq -r --arg o "$1" --argjson i "$i" '.[$o].modes[$i].is_preferred' <<<"$OUTPUTS_JSON")"
+      disp="$(mode_string "$1" "$i")"
+      [ "$pref" = true ] && disp+=" (preferred)"
+      [ "$i" = "$cur" ]  && disp+=" *current"
+      echo "$disp"
+    done
+  } | pick "Mode for $1" | {
+    read -r sel
+    [ -z "$sel" ] && return
+    if [[ "$sel" == auto* ]]; then apply "$1" mode auto
+    else apply "$1" mode "${sel%% *}"; fi
+  }
+}
+
+set_scale() { # $1=output
+  local v
+  v="$(printf 'auto\n1\n1.25\n1.5\n2\ncustom…\n' | pick "Scale for $1")"
+  [ -z "$v" ] && return
+  [ "$v" = "custom…" ] && v="$(ask "Scale factor for $1 (e.g. 1.5)")"
+  [ -z "$v" ] && return
+  apply "$1" scale "$v"
+}
+
+set_position() { # $1=output
+  local v x y
+  v="$(printf 'auto\nset X Y…\n' | pick "Position for $1")"
+  case "$v" in
+    auto)      apply "$1" position auto ;;
+    "set X Y…")
+      x="$(ask "X (logical px) for $1")"; [ -z "$x" ] && return
+      y="$(ask "Y (logical px) for $1")"; [ -z "$y" ] && return
+      apply "$1" position set "$x" "$y" ;;
+  esac
+}
+
+set_transform() { # $1=output
+  local v
+  v="$(printf 'normal\n90\n180\n270\nflipped\nflipped-90\nflipped-180\nflipped-270\n' \
+       | pick "Transform for $1")"
+  [ -n "$v" ] && apply "$1" transform "$v"
+}
+
+set_vrr() { # $1=output
+  refresh
+  if ! jq -e --arg o "$1" '.[$o].vrr_supported' <<<"$OUTPUTS_JSON" >/dev/null; then
+    notify "$1 does not support VRR."; return
+  fi
+  local v; v="$(printf 'on\non-demand\noff\n' | pick "VRR for $1")"
+  [ -n "$v" ] && apply "$1" vrr "$v"
+}
+
+configure_output() {
+  local out action
+  out="$(choose_output)"; [ -z "$out" ] && return
+  while :; do
+    refresh
+    action="$(printf '%s\n' \
+        "$(is_on "$out" && echo '⏻  Turn OFF' || echo '⏻  Turn ON')" \
+        "󰍹  Mode" "  Scale" "  Position" "  Transform" "  VRR" "  Back" \
+      | pick "$out")"
+    case "$action" in
+      *"Turn ON")   apply "$out" on ;;
+      *"Turn OFF")  apply "$out" off ;;
+      *Mode)        set_mode "$out" ;;
+      *Scale)       set_scale "$out" ;;
+      *Position)    set_position "$out" ;;
+      *Transform)   set_transform "$out" ;;
+      *VRR)         set_vrr "$out" ;;
+      *)            return ;;
+    esac
+  done
+}
+
+# ----------------------------------------------------------------------------
+# Non-interactive subcommands
+# ----------------------------------------------------------------------------
+case "${1:-}" in
+  external-only|internal-only|extend) preset "$1"; exit $? ;;
+  status) refresh; status_text; exit 0 ;;
+  ""|menu) : ;;  # fall through to interactive menu
+  *) echo "Unknown command: $1" >&2
+     echo "Usage: monitors [external-only|internal-only|extend|status]" >&2
+     exit 2 ;;
+esac
+
+# ----------------------------------------------------------------------------
+# Interactive main menu
+# ----------------------------------------------------------------------------
+while :; do
+  choice="$(printf '%s\n' \
+      "󰍹  External only" \
+      "󰌢  Internal only" \
+      "󰍺  Extend (all on)" \
+      "  Configure an output…" \
+      "  Show status" \
+      "  Quit" \
+    | pick "Monitors")"
+  case "$choice" in
+    *"External only")   preset external-only ;;
+    *"Internal only")   preset internal-only ;;
+    *"Extend"*)         preset extend ;;
+    *"Configure"*)      configure_output ;;
+    *"Show status")     refresh; notify "$(status_text)" ;;
+    *"Quit"|"")         exit 0 ;;
+  esac
+done
