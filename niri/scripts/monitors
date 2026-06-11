@@ -77,6 +77,15 @@ names()          { jq -r 'keys[]'                       <<<"$OUTPUTS_JSON"; }
 is_on()          { jq -e --arg o "$1" '.[$o].current_mode != null' <<<"$OUTPUTS_JSON" >/dev/null; }
 label()          { jq -r --arg o "$1" '.[$o] | "\(.make) \(.model)" | gsub("^ +| +$";"")' <<<"$OUTPUTS_JSON"; }
 
+# Logical geometry of an output as "x y w h" (integers); empty if it is off.
+geometry() { # $1=output
+  jq -r --arg o "$1" '
+    .[$o].logical
+    | if . == null then ""
+      else "\(.x|round) \(.y|round) \(.width|round) \(.height|round)" end
+  ' <<<"$OUTPUTS_JSON"
+}
+
 # Build a niri mode string "WxH@rrr.fff" from a JSON mode object index.
 mode_string() { # $1=output $2=mode_index
   jq -r --arg o "$1" --argjson i "$2" '
@@ -192,15 +201,76 @@ set_scale() { # $1=output
   apply "$1" scale "$v"
 }
 
+place_relative() { # $1=output $2=direction (left|right|above|below)
+  refresh
+  local dirtext others=() o ref tg rg
+  case "$2" in
+    left)  dirtext="to the left of" ;;
+    right) dirtext="to the right of" ;;
+    above) dirtext="above" ;;
+    below) dirtext="below" ;;
+  esac
+
+  while IFS= read -r o; do
+    [ "$o" = "$1" ] && continue
+    is_on "$o" && others+=("$o")
+  done < <(names)
+  if [ "${#others[@]}" -eq 0 ]; then
+    notify "No other active output to place $1 $dirtext."
+    return
+  fi
+
+  if [ "${#others[@]}" -eq 1 ]; then
+    ref="${others[0]}"
+  else
+    ref="$(for o in "${others[@]}"; do printf '%s  (%s)\n' "$o" "$(label "$o")"; done \
+           | pick "Place $1 $dirtext")"
+    [ -z "$ref" ] && return
+    ref="${ref%% *}"
+  fi
+
+  tg="$(geometry "$1")"
+  if [ -z "$tg" ]; then
+    notify "$1 is off — turn it on first so its size is known."
+    return
+  fi
+  rg="$(geometry "$ref")"
+
+  # Edges are aligned with the reference: top edge for left/right, left edge
+  # for above/below. Fine-tune with "set X Y…" if needed.
+  local tw th rx ry rw rh x y
+  read -r _ _ tw th <<<"$tg"
+  read -r rx ry rw rh <<<"$rg"
+  case "$2" in
+    left)  x=$((rx - tw)); y=$ry ;;
+    right) x=$((rx + rw)); y=$ry ;;
+    above) x=$rx;          y=$((ry - th)) ;;
+    below) x=$rx;          y=$((ry + rh)) ;;
+  esac
+  # "--" so negative coordinates are not parsed as flags.
+  apply "$1" position set -- "$x" "$y" && notify "$1 placed $dirtext $ref  ($x,$y)"
+}
+
 set_position() { # $1=output
   local v x y
-  v="$(printf 'auto\nset X Y…\n' | pick "Position for $1")"
+  v="$(printf '%s\n' \
+        'auto' \
+        '←  left of another output' \
+        '→  right of another output' \
+        '↑  above another output' \
+        '↓  below another output' \
+        'set X Y…' \
+      | pick "Position for $1")"
   case "$v" in
-    auto)      apply "$1" position auto ;;
+    auto)         apply "$1" position auto ;;
+    *"left of"*)  place_relative "$1" left ;;
+    *"right of"*) place_relative "$1" right ;;
+    *above*)      place_relative "$1" above ;;
+    *below*)      place_relative "$1" below ;;
     "set X Y…")
       x="$(ask "X (logical px) for $1")"; [ -z "$x" ] && return
       y="$(ask "Y (logical px) for $1")"; [ -z "$y" ] && return
-      apply "$1" position set "$x" "$y" ;;
+      apply "$1" position set -- "$x" "$y" ;;
   esac
 }
 
