@@ -94,6 +94,22 @@ mode_string() { # $1=output $2=mode_index
   ' <<<"$OUTPUTS_JSON"
 }
 
+# Index of the best mode: largest pixel count first, then highest refresh rate.
+# Not the same as "preferred" — many panels advertise a 60 Hz preferred mode
+# even when they can do more (this AOC prefers 60 Hz but supports 100 Hz), and
+# `niri msg output … mode auto` always follows the preferred one.
+best_mode_index() { # $1=output
+  jq -r --arg o "$1" '
+    [.[$o].modes | to_entries[]]
+    | max_by([.value.width * .value.height, .value.refresh_rate])
+    | .key
+  ' <<<"$OUTPUTS_JSON"
+}
+
+best_mode() { # $1=output — mode string of the highest-quality mode
+  mode_string "$1" "$(best_mode_index "$1")"
+}
+
 apply() { # forwards to niri, surfaces errors
   local out
   if ! out="$(niri msg output "$@" 2>&1)"; then
@@ -140,15 +156,30 @@ preset() { # $1 = external-only | internal-only | extend
     return 1
   fi
 
-  # Turn on the targets first (so we never momentarily have zero active outputs),
-  # let niri auto-pick best mode/scale/position, then turn off the rest.
+  # Turn on the targets first, so we never momentarily have zero active outputs.
+  # Mode is picked explicitly (highest quality, not merely "preferred"); scale
+  # is left to niri.
   for n in "${want[@]}"; do
     apply "$n" on
-    apply "$n" mode auto
+    refresh
+    apply "$n" mode "$(best_mode "$n")"
     apply "$n" scale auto
-    apply "$n" position auto
   done
+
+  # Only blank the other outputs once a target is confirmed live — otherwise a
+  # target that failed to come up would leave every screen dark.
+  refresh
+  local live=()
+  for n in "${want[@]}"; do is_on "$n" && live+=("$n"); done
+  if [ "${#live[@]}" -eq 0 ]; then
+    notify "None of the outputs for preset '$1' came up — leaving the current setup untouched."
+    return 1
+  fi
   for n in "${drop[@]}"; do apply "$n" off; done
+
+  # Reposition afterwards: with the dropped outputs gone the layout changed, and
+  # a position computed while they were still on would leave a gap at the origin.
+  for n in "${live[@]}"; do apply "$n" position auto; done
 
   refresh
   notify "Preset '$1' applied:\n$(status_text)"
@@ -172,22 +203,26 @@ choose_output() {
 
 set_mode() { # $1=output
   refresh
-  local count idx i pref cur disp sel
+  local count i pref cur best disp sel
   count="$(jq --arg o "$1" '.[$o].modes | length' <<<"$OUTPUTS_JSON")"
   cur="$(jq -r --arg o "$1" '.[$o].current_mode // -1' <<<"$OUTPUTS_JSON")"
+  best="$(best_mode_index "$1")"
   {
+    echo "best — $(mode_string "$1" "$best") (highest resolution + refresh)"
     echo "auto (let niri choose)"
     for ((i=0; i<count; i++)); do
       pref="$(jq -r --arg o "$1" --argjson i "$i" '.[$o].modes[$i].is_preferred' <<<"$OUTPUTS_JSON")"
       disp="$(mode_string "$1" "$i")"
       [ "$pref" = true ] && disp+=" (preferred)"
+      [ "$i" = "$best" ] && disp+=" (best)"
       [ "$i" = "$cur" ]  && disp+=" *current"
       echo "$disp"
     done
   } | pick "Mode for $1" | {
     read -r sel
     [ -z "$sel" ] && return
-    if [[ "$sel" == auto* ]]; then apply "$1" mode auto
+    if   [[ "$sel" == best* ]]; then apply "$1" mode "$(best_mode "$1")"
+    elif [[ "$sel" == auto* ]]; then apply "$1" mode auto
     else apply "$1" mode "${sel%% *}"; fi
   }
 }
