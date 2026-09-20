@@ -8,8 +8,9 @@ input {
 
     keyboard {
         xkb {
-            layout "us,ru"
-            options "grp:caps_toggle"
+            // Caps Lock: us <-> ru, Ctrl+Caps Lock: tj (см. ~/dots/xkb)
+            layout "us,ru,tj"
+            options "custom:tj_switch"
         }
 
         repeat-delay 600

@@ -1,0 +1,21 @@
+// Тип для клавиши Caps Lock при трёх раскладках (см. ../symbols/custom):
+//
+//   уровень 1 (без модификаторов)  переключение раскладки
+//   уровень 2 (Shift)              штатное поведение Caps Lock
+//   уровень 3 (Ctrl)               таджикская раскладка
+//
+// Готового типа с такой комбинацией модификаторов в xkeyboard-config нет:
+// PC_CONTROL_LEVEL2 знает только Ctrl, FOUR_LEVEL — только Shift и AltGr.
+
+partial xkb_types "tj_switch" {
+    type "CAPS_TJ_SWITCH" {
+        modifiers = Shift+Control;
+        map[None] = Level1;
+        map[Shift] = Level2;
+        map[Control] = Level3;
+        map[Shift+Control] = Level3;
+        level_name[Level1] = "Switch";
+        level_name[Level2] = "Caps";
+        level_name[Level3] = "Tajik";
+    };
+};

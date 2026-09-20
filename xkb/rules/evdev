@@ -1,0 +1,12 @@
+// Пользовательские правила xkb: подключают системные и добавляют
+// собственную опцию custom:tj_switch (см. types/custom и symbols/custom).
+//
+// libxkbcommon ищет этот каталог раньше /usr/share/X11/xkb.
+
+! include %S/evdev
+
+! option = types
+  custom:tj_switch = +custom(tj_switch)
+
+! option = symbols
+  custom:tj_switch = +custom(tj_switch_g1):1+custom(tj_switch_g2):2+custom(tj_switch_g3):3

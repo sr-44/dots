@@ -54,7 +54,8 @@
     "niri/language": {
         "format": "{}",
         "format-en": "us",
-        "format-ru": "ru"
+        "format-ru": "ru",
+        "format-tg": "tj"
     },
 
     "custom/separator": {

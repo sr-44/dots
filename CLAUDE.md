@@ -26,7 +26,7 @@ Hyprland configs live in `~/.config/hypr/` and reference scripts via `~/.config/
   - `hyprland.conf` — main config (monitor layout, env vars, startup, visuals); sources `keybinds.conf`
   - `keybinds.conf` — all keybindings, `$mod = SUPER`
   - `hypridle.conf` / `hyprlock.conf` — idle/lock screen
-  - `scripts/` — wallpaper manager, screenshot, bar toggle, battery check, dynamic border, Tajik layout helper
+  - `scripts/` — wallpaper manager, screenshot, bar toggle, battery check, dynamic border
 - **waybar/** — status bar; `config` defines modules layout, `style.css` styles it; `scripts/` has dunst toggle and todo helper; `icons/` has custom SVG icons with a meson build for GResource
 - **rofi/** — app launcher and menus; `onedark.rasi` is the base theme; `launcher/`, `powermenu/` are separate entry points with their own scripts
 - **dunst/** — notification daemon config (`dunstrc`)
@@ -49,10 +49,41 @@ Hyprland configs live in `~/.config/hypr/` and reference scripts via `~/.config/
 - **picom/** — compositor config
 
 ### Shared / Global
+- **xkb/** — custom xkb rules, types + symbols (`custom:tj_switch` layout-switching option)
 - **gtk/** — GTK 2/3/4 themes + xsettingsd
 - **neofetch/** — fetch config
 - **.zshrc** — zsh with oh-my-zsh, Catppuccin Mocha theme, plugins: git, zsh-syntax-highlighting, tmux, artisan
 - **.vimrc** — vim config
+
+## Keyboard Layouts
+
+Three layouts are configured: `us, ru, tj`. Switching is defined entirely in xkb
+(`xkb/symbols/custom` + `xkb/types/custom`, exposed as the option `custom:tj_switch` by
+`xkb/rules/evdev`), so it behaves identically under niri and Hyprland:
+
+- **Caps Lock** — toggles `us` <-> `ru` only; from `tj` it returns to `ru`
+- **Ctrl+Caps Lock** — switches to `tj`; from `tj` it returns to `ru`
+- **Shift+Caps Lock** — plain Caps Lock, as with `grp:caps_toggle`
+
+Tajik is deliberately kept out of the Caps Lock cycle since it is used rarely.
+
+The three levels come from the custom type `CAPS_TJ_SWITCH` (`modifiers = Shift+Control`):
+xkeyboard-config ships no type combining Shift and Ctrl as level choosers — `PC_CONTROL_LEVEL2`
+knows only Ctrl, `FOUR_LEVEL` only Shift and AltGr.
+
+The option is applied via `options "custom:tj_switch"` (niri) and `kb_options` (Hyprland);
+both read `~/.config/xkb`, so the symlink `ln -sf ~/dots/xkb ~/.config/xkb` is required.
+
+libxkbcommon builds its include paths once, when the compositor creates its xkb context,
+and silently skips directories that do not exist yet. So `~/.config/xkb` must exist
+*before* the session starts: after creating the symlink, restart the compositor session —
+a config reload is not enough. If the option is not picked up, the journal shows
+`[XKB-595] Unrecognized RMLVO option "custom:tj_switch" was ignored` and Caps Lock falls
+back to plain caps locking.
+
+Each group is included separately with an explicit index
+(`+custom(tj_switch_g1):1+custom(tj_switch_g2):2+...`) because libxkbcommon drops every
+group but the first when a multi-group section is pulled in as an option (XKB-700).
 
 ## Color Scheme
 

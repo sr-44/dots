@@ -1,0 +1,43 @@
+// Переключение раскладок для набора layout "us,ru,tj":
+//
+//   Caps Lock        us <-> ru, из tj возвращает в ru
+//   Ctrl+Caps Lock   переход в tj, из tj обратно в ru
+//   Shift+Caps Lock  штатный Caps Lock (заглавные буквы)
+//
+// Так таджикская раскладка не попадает в обычный цикл Caps Lock.
+// Уровни клавиши задаёт тип CAPS_TJ_SWITCH из ../types/custom.
+//
+// Поведение задано тремя секциями по одной на группу: подключённая как
+// опция секция с несколькими группами теряет всё кроме первой группы
+// (libxkbcommon, XKB-700), поэтому каждая группа подключается отдельно
+// с явным индексом.
+
+// группа 1 — us
+partial modifier_keys
+xkb_symbols "tj_switch_g1" {
+    key <CAPS> {
+        type = "CAPS_TJ_SWITCH",
+        symbols[1] = [ ISO_Next_Group, Caps_Lock, ISO_Last_Group ],
+        actions[1] = [ LockGroup(group=2), LockMods(modifiers=Lock), LockGroup(group=3) ]
+    };
+};
+
+// группа 2 — ru
+partial modifier_keys
+xkb_symbols "tj_switch_g2" {
+    key <CAPS> {
+        type = "CAPS_TJ_SWITCH",
+        symbols[1] = [ ISO_First_Group, Caps_Lock, ISO_Last_Group ],
+        actions[1] = [ LockGroup(group=1), LockMods(modifiers=Lock), LockGroup(group=3) ]
+    };
+};
+
+// группа 3 — tj
+partial modifier_keys
+xkb_symbols "tj_switch_g3" {
+    key <CAPS> {
+        type = "CAPS_TJ_SWITCH",
+        symbols[1] = [ ISO_Prev_Group, Caps_Lock, ISO_Prev_Group ],
+        actions[1] = [ LockGroup(group=2), LockMods(modifiers=Lock), LockGroup(group=2) ]
+    };
+};
