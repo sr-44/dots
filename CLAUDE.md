@@ -50,6 +50,17 @@ Hyprland configs live in `~/.config/hypr/` and reference scripts via `~/.config/
 
 ### Shared / Global
 - **xkb/** — custom xkb rules, types + symbols (`custom:tj_switch` layout-switching option)
+- **betta/** — interactive live wallpaper: a procedural halfmoon betta fish (no textures or models)
+  - `betta.js` — WebGL2 renderer, spring-driven fin rays, swimming behaviour; `index.html` hosts it
+  - `betta-wallpaper` — Python host (GTK4 + gtk4-layer-shell + WebKitGTK 6.0) that puts the page on the
+    background layer of every output; works on niri and Hyprland. Running it again turns it off.
+    Extra `key=value` args become page params: `size`, `fps` (host default 60), `dust`, `seed`
+  - The fish follows the pointer over the bare desktop and eats food dropped with a left click
+  - swaybg keeps running underneath, so turning the fish off reveals the static wallpaper
+  - Pigment is baked into textures at startup; only the fish's screen rectangle is multisampled,
+    which keeps the frame cost low. When windows cover the wallpaper, niri throttles it to ~1 fps
+  - Test params: `still=<s>&pose=ref&png` (deterministic frame as a data URL in `#err`),
+    `bench` (frame cost), `dbg[&manual]` (exposes `window.betta`; `manual` steps only via `betta.step(dt)`)
 - **gtk/** — GTK 2/3/4 themes + xsettingsd
 - **neofetch/** — fetch config
 - **.zshrc** — zsh with oh-my-zsh, Catppuccin Mocha theme, plugins: git, zsh-syntax-highlighting, tmux, artisan

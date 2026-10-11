@@ -1,0 +1,120 @@
+#!/usr/bin/env python3
+"""Live betta wallpaper: shows betta/index.html on the Wayland background layer of every output.
+
+Usage: betta-wallpaper [--debug] [--snapshot FILE] [key=value ...]
+
+key=value pairs are passed to the page (size=1.2, fps=30, dust=0.5, seed=...);
+the frame rate is capped at 60 fps unless fps= is given (fps=0 = display rate).
+Running it again while it is already running turns the wallpaper off.
+Move the pointer over the empty desktop and the fish follows it; click to drop food.
+"""
+import os
+import sys
+from ctypes import CDLL
+
+# gtk4-layer-shell must be loaded before libwayland-client, i.e. before Gtk is imported
+CDLL('libgtk4-layer-shell.so')
+
+import gi  # noqa: E402
+
+gi.require_version('Gtk', '4.0')
+gi.require_version('Gdk', '4.0')
+gi.require_version('Gtk4LayerShell', '1.0')
+gi.require_version('WebKit', '6.0')
+from gi.repository import Gdk, GLib, Gtk, WebKit  # noqa: E402
+from gi.repository import Gtk4LayerShell as LayerShell  # noqa: E402
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+PAGE = 'file://' + os.path.join(HERE, 'index.html')
+
+
+def parse_args(argv):
+    opts = {'debug': False, 'snapshot': None, 'query': []}
+    args = iter(argv)
+    for a in args:
+        if a in ('-h', '--help'):
+            print(__doc__.strip())
+            sys.exit(0)
+        elif a == '--debug':
+            opts['debug'] = True
+        elif a == '--snapshot':
+            opts['snapshot'] = os.path.abspath(next(args))
+        elif '=' in a:
+            opts['query'].append(a)
+        else:
+            sys.exit(f'betta-wallpaper: unknown argument {a!r} (see --help)')
+    return opts
+
+
+class Wallpaper(Gtk.Application):
+    def __init__(self, opts):
+        super().__init__(application_id='io.github.sr44.BettaWallpaper')
+        self.opts = opts
+        self.windows = {}  # monitor -> window
+
+    def do_startup(self):
+        Gtk.Application.do_startup(self)
+        WebKit.WebContext.get_default().add_path_to_sandbox(HERE, True)
+        self.hold()
+
+    def do_activate(self):
+        # a second launch lands here in the running instance: toggle off
+        if self.windows:
+            self.quit()
+            return
+        monitors = Gdk.Display.get_default().get_monitors()
+        monitors.connect('items-changed', lambda model, *_: self.sync(model))
+        self.sync(monitors)
+
+    def sync(self, model):
+        current = [model.get_item(i) for i in range(model.get_n_items())]
+        for mon in list(self.windows):
+            if mon not in current:
+                self.windows.pop(mon).destroy()
+        for mon in current:
+            if mon not in self.windows:
+                self.windows[mon] = self.make_window(mon)
+
+    def make_window(self, monitor):
+        win = Gtk.Window(application=self)
+        LayerShell.init_for_window(win)
+        LayerShell.set_layer(win, LayerShell.Layer.BACKGROUND)
+        LayerShell.set_namespace(win, 'betta-wallpaper')
+        LayerShell.set_monitor(win, monitor)
+        LayerShell.set_exclusive_zone(win, -1)
+        LayerShell.set_keyboard_mode(win, LayerShell.KeyboardMode.NONE)
+        for edge in (LayerShell.Edge.TOP, LayerShell.Edge.BOTTOM, LayerShell.Edge.LEFT, LayerShell.Edge.RIGHT):
+            LayerShell.set_anchor(win, edge, True)
+
+        view = WebKit.WebView()
+        settings = view.get_settings()
+        settings.set_hardware_acceleration_policy(WebKit.HardwareAccelerationPolicy.ALWAYS)
+        settings.set_enable_webgl(True)
+        settings.set_enable_write_console_messages_to_stdout(self.opts['debug'])
+        black = Gdk.RGBA()
+        black.parse('black')
+        view.set_background_color(black)
+        view.connect('context-menu', lambda *_: True)
+
+        query = [f'seed=betta-{monitor.get_connector() or "0"}', 'fps=60'] + self.opts['query']
+        if self.opts['debug']:
+            query.append('stats')
+        view.load_uri(PAGE + '?' + '&'.join(query))
+        win.set_child(view)
+        win.present()
+
+        if self.opts['snapshot'] and len(self.windows) == 0:
+            GLib.timeout_add_seconds(6, self.snapshot, view)
+        return win
+
+    def snapshot(self, view):
+        def done(view, result):
+            view.get_snapshot_finish(result).save_to_png(self.opts['snapshot'])
+            print('snapshot saved to', self.opts['snapshot'], flush=True)
+        view.get_snapshot(WebKit.SnapshotRegion.VISIBLE, WebKit.SnapshotOptions.NONE, None, done)
+        return GLib.SOURCE_REMOVE
+
+
+if __name__ == '__main__':
+    opts = parse_args(sys.argv[1:])
+    sys.exit(Wallpaper(opts).run([sys.argv[0]]))
