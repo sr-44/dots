@@ -106,15 +106,6 @@ button:hover {
     color: #585b70;
 }
 
-#custom-hub {
-    padding: 0 8px 0 4px;
-    color: #b4befe;
-}
-
-#custom-hub:hover {
-    color: #89b4fa;
-}
-
 #custom-swaync,
 #language,
 #clock,

@@ -5,8 +5,6 @@
     "spacing": 4,
 
     "modules-left": [
-        "custom/hub",
-        "custom/separator",
         "niri/workspaces",
         "custom/separator",
         "niri/language",
@@ -58,14 +56,6 @@
 
     "custom/separator": {
         "format": "|"
-    },
-
-    "custom/hub": {
-        "format": "󰕮",
-        "tooltip-format": "hub · right click: capture · middle click: island",
-        "on-click": "~/.config/hub/panel/panel",
-        "on-click-right": "~/.config/hub/panel/panel capture",
-        "on-click-middle": "~/.config/hub/island/island"
     },
 
     "custom/sysmon": {
