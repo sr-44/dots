@@ -1,0 +1,258 @@
+#!/usr/bin/env python3
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+from collections import deque
+
+HISTORY = 40
+TOP = 5
+
+ALERTS = {
+    'cpu': (90, 70, 30, 'High CPU load', 'CPU above {v:.0f}% for half a minute'),
+    'temp': (90, 80, 10, 'CPU is hot', 'Package at {v:.0f}°C'),
+    'mem': (90, 80, 10, 'Memory pressure', 'RAM {v:.0f}% used'),
+    'disk': (90, 85, 0, 'Disk almost full', '/ is {v:.0f}% full'),
+}
+
+MUTED = '#585b70'
+WARN = '#f9e2af'
+CRIT = '#f38ba8'
+BLOCKS = '▁▂▃▄▅▆▇█'
+TICKS = os.sysconf('SC_CLK_TCK')
+
+
+def read(path):
+    with open(path) as f:
+        return f.read()
+
+
+def find_temp_sensor():
+    base = '/sys/class/hwmon'
+    found = {}
+    for hw in os.listdir(base):
+        try:
+            found[read(f'{base}/{hw}/name').strip()] = f'{base}/{hw}'
+        except OSError:
+            pass
+    for name in ('coretemp', 'k10temp', 'zenpower', 'acpitz'):
+        if name in found:
+            return f'{found[name]}/temp1_input'
+    return None
+
+
+class Monitor:
+    def __init__(self, alerts=True, procs=True):
+        self.alerts = alerts
+        self.want_procs = procs
+        self.temp_path = find_temp_sensor()
+        self.hist = {k: deque(maxlen=HISTORY) for k in ('cpu', 'mem', 'temp', 'rx', 'tx')}
+        self.prev_cpu = None
+        self.prev_net = None
+        self.prev_procs = {}
+        self.prev_procs_time = time.monotonic()
+        self.procs = []
+        self.prev_time = time.monotonic()
+        self.since = {}
+        self.fired = set()
+        self.disk = 0.0
+        self.tick = 0
+
+    def cpu(self):
+        f = [int(x) for x in read('/proc/stat').split('\n', 1)[0].split()[1:]]
+        idle, total = f[3] + f[4], sum(f[:8])
+        prev, self.prev_cpu = self.prev_cpu, (idle, total)
+        if prev is None or total == prev[1]:
+            return 0.0
+        return 100 * (1 - (idle - prev[0]) / (total - prev[1]))
+
+    def memory(self):
+        info = {}
+        for line in read('/proc/meminfo').splitlines():
+            key, val = line.split(':', 1)
+            info[key] = int(val.split()[0]) * 1024
+        total, avail = info['MemTotal'], info['MemAvailable']
+        swap_used = info['SwapTotal'] - info['SwapFree']
+        return 100 * (1 - avail / total), total - avail, total, swap_used, info['SwapTotal']
+
+    def temperature(self):
+        if not self.temp_path:
+            return None
+        try:
+            return int(read(self.temp_path)) / 1000
+        except OSError:
+            return None
+
+    def network(self, dt):
+        rx = tx = 0
+        for line in read('/proc/net/dev').splitlines()[2:]:
+            name, data = line.split(':', 1)
+            if name.strip() == 'lo':
+                continue
+            f = data.split()
+            rx += int(f[0])
+            tx += int(f[8])
+        prev, self.prev_net = self.prev_net, (rx, tx)
+        if prev is None or dt <= 0:
+            return 0.0, 0.0
+        return max(0, rx - prev[0]) / dt, max(0, tx - prev[1]) / dt
+
+    def processes(self):
+        t = time.monotonic()
+        dt, self.prev_procs_time = t - self.prev_procs_time, t
+        now = {}
+        for pid in os.listdir('/proc'):
+            if not pid.isdigit():
+                continue
+            try:
+                stat = read(f'/proc/{pid}/stat')
+            except OSError:
+                continue
+            name = stat[stat.index('(') + 1:stat.rindex(')')]
+            f = stat[stat.rindex(')') + 2:].split()
+            now[pid] = (int(f[11]) + int(f[12]), name)
+        busy = {}
+        for pid, (ticks, name) in now.items():
+            if pid in self.prev_procs and dt > 0:
+                pct = 100 * (ticks - self.prev_procs[pid][0]) / TICKS / dt
+                busy[name] = busy.get(name, 0) + pct
+        self.prev_procs = now
+        return sorted(((v, k) for k, v in busy.items()), reverse=True)[:TOP]
+
+    def alert(self, metric, value):
+        if value is None:
+            return
+        limit, floor, hold, title, body = ALERTS[metric]
+        now = time.monotonic()
+        if value >= limit:
+            self.since.setdefault(metric, now)
+            if metric not in self.fired and now - self.since[metric] >= hold:
+                self.fired.add(metric)
+                subprocess.Popen(['notify-send', '-a', 'sysmon', '-u', 'critical',
+                                  title, body.format(v=value)])
+        elif value < floor:
+            self.since.pop(metric, None)
+            self.fired.discard(metric)
+        else:
+            self.since.pop(metric, None)
+
+    def measure(self):
+        now = time.monotonic()
+        dt, self.prev_time = now - self.prev_time, now
+        cpu = self.cpu()
+        mem, used, total, swap, swap_total = self.memory()
+        temp = self.temperature()
+        rx, tx = self.network(dt)
+        if self.tick % 30 == 0:
+            du = shutil.disk_usage('/')
+            self.disk = 100 * du.used / du.total
+        if self.want_procs and self.tick % 3 == 0:
+            self.procs = self.processes()
+        self.tick += 1
+
+        for key, val in (('cpu', cpu), ('mem', mem), ('temp', temp), ('rx', rx), ('tx', tx)):
+            self.hist[key].append(val or 0)
+        if self.alerts:
+            for key, val in (('cpu', cpu), ('mem', mem), ('temp', temp), ('disk', self.disk)):
+                self.alert(key, val)
+        return dict(cpu=cpu, mem=mem, used=used, total=total, swap=swap, swap_total=swap_total,
+                    temp=temp, rx=rx, tx=tx, disk=self.disk, procs=self.procs)
+
+    def sample(self):
+        m = self.measure()
+        cpu, mem, temp, procs = m['cpu'], m['mem'], m['temp'], m['procs']
+        used, total, swap, swap_total, rx, tx = (m[k] for k in ('used', 'total', 'swap', 'swap_total', 'rx', 'tx'))
+
+        level = 'normal'
+        if (temp or 0) >= 90 or mem >= 95:
+            level = 'critical'
+        elif cpu >= 85 or mem >= 85 or (temp or 0) >= 80:
+            level = 'warning'
+
+        return {
+            'text': self.text(cpu, mem, temp),
+            'tooltip': self.tooltip(cpu, mem, used, total, swap, swap_total, temp, rx, tx, procs),
+            'class': level,
+            'percentage': round(cpu),
+        }
+
+    @staticmethod
+    def colored(text, value, warn, crit):
+        if value is not None and value >= crit:
+            return f"<span color='{CRIT}'>{text}</span>"
+        if value is not None and value >= warn:
+            return f"<span color='{WARN}'>{text}</span>"
+        return text
+
+    def text(self, cpu, mem, temp):
+        sep = f"  <span color='{MUTED}'>|</span>  "
+        parts = [
+            self.colored(f'{mem:.0f}% 󰍛', mem, 85, 95),
+            self.colored(f'{cpu:.0f}% ', cpu, 85, 95),
+        ]
+        if temp is not None:
+            parts.append(self.colored(f'{temp:.0f}°C ', temp, 80, 90))
+        return sep.join(parts)
+
+    def tooltip(self, cpu, mem, used, total, swap, swap_total, temp, rx, tx, procs):
+        lines = [
+            f"CPU   {spark(self.hist['cpu'], 100)}  {cpu:5.1f}%",
+            f"RAM   {spark(self.hist['mem'], 100)}  {mem:5.1f}%",
+        ]
+        if temp is not None:
+            lines.append(f"Temp  {spark(self.hist['temp'], 100)}  {temp:5.0f}°C")
+        peak = max(max(self.hist['rx']), max(self.hist['tx']), 1)
+        lines += [
+            f"Down  {spark(self.hist['rx'], peak)}  {rate(rx):>7}",
+            f"Up    {spark(self.hist['tx'], peak)}  {rate(tx):>7}",
+            '',
+            f"Memory  {size(used)} / {size(total)}",
+            f"Swap    {size(swap)} / {size(swap_total)}" if swap_total else 'Swap    off',
+            f"Disk /  {self.disk:.0f}% used",
+        ]
+        if procs:
+            lines += ['', 'Busiest']
+            lines += [f"  {pct:5.1f}%  {name[:24]}" for pct, name in procs if pct >= 0.1]
+        body = '\n'.join(lines).replace('&', '&amp;').replace('<', '&lt;')
+        return f'<tt>{body}</tt>'
+
+
+def spark(values, top):
+    if not values:
+        return ''
+    out = ''.join(BLOCKS[min(len(BLOCKS) - 1, int(v / top * (len(BLOCKS) - 1) + 0.5))]
+                  for v in values)
+    return out.rjust(HISTORY)
+
+
+def rate(bps):
+    for unit in ('B/s', 'K/s', 'M/s', 'G/s'):
+        if bps < 1000:
+            return f'{bps:.0f} {unit}' if unit == 'B/s' else f'{bps:.1f} {unit}'
+        bps /= 1024
+    return f'{bps:.1f} T/s'
+
+
+def size(b):
+    for unit in ('B', 'K', 'M', 'G', 'T'):
+        if b < 1024:
+            return f'{b:.1f}{unit}'
+        b /= 1024
+    return f'{b:.1f}P'
+
+
+def main():
+    mon = Monitor()
+    mon.sample()
+    while True:
+        time.sleep(1)
+        try:
+            print(json.dumps(mon.sample(), ensure_ascii=False), flush=True)
+        except BrokenPipeError:
+            sys.exit(0)
+
+
+if __name__ == '__main__':
+    main()
