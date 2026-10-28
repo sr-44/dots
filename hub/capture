@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+source "$(dirname "$(readlink -f "$0")")/lib.sh"
+
+SHOTS=$HOME/Pictures/Screenshots
+CLIPS=$HOME/Videos/Recordings
+REC=$RUN/rec
+
+recording() {
+    [[ -f $REC ]] || return 1
+    local pid
+    read -r pid _ < "$REC"
+    kill -0 "$pid" 2>/dev/null && return 0
+    rm -f "$REC"
+    return 1
+}
+
+ocr() {
+    need grim slurp tesseract
+    local langs
+    langs=$(tesseract --list-langs 2>/dev/null | grep -xE 'eng|rus|tgk' | paste -sd+)
+    if [[ -z $langs ]]; then
+        note -u critical "OCR" "No languages installed: sudo pacman -S tesseract-data-eng tesseract-data-rus"
+        exit 1
+    fi
+    local geom text
+    geom=$(slurp) || exit 0
+    text=$(grim -g "$geom" - | magick - -resize 200% png:- | tesseract - - -l "$langs" 2>/dev/null)
+    text=$(printf '%s' "$text" | sed -e 's/[[:space:]]*$//' -e '/./,$!d')
+    if [[ -z $text ]]; then
+        note "OCR" "No text found"
+        return
+    fi
+    printf '%s' "$text" | wl-copy
+    note "Text copied" "$(printf '%s' "$text" | head -c 300)"
+}
+
+color() {
+    need grim slurp magick:imagemagick
+    local point hex swatch
+    point=$(slurp -p -b 00000000) || exit 0
+    hex=$(grim -g "$point" -t ppm - | magick - -format '#%[hex:p{0,0}]' info:)
+    hex=${hex:0:7}
+    printf '%s' "$hex" | wl-copy
+    swatch=$RUN/swatch.png
+    magick -size 64x64 "xc:$hex" "$swatch"
+    note -i "$swatch" "Colour copied" "$hex  ·  rgb($(printf '%d, %d, %d' "0x${hex:1:2}" "0x${hex:3:2}" "0x${hex:5:2}"))"
+}
+
+edit() {
+    need grim slurp swappy wl-copy:wl-clipboard
+    mkdir -p "$SHOTS/slurp"
+    local geom out=$SHOTS/slurp/$(date '+%Y_%m_%d_%H%M%S').png
+    geom=$(slurp -d) || exit 0
+    grim -g "$geom" - | swappy -f - -o - | tee "$out" | wl-copy
+    [[ -s $out ]] && note -u low -i "$out" "Screenshot" "Saved to $out"
+}
+
+record() {
+    need wf-recorder slurp
+    if recording; then
+        stop
+        return
+    fi
+    mkdir -p "$CLIPS"
+    local geom target out=$CLIPS/$(date '+%Y_%m_%d_%H%M%S').mp4
+    if [[ $1 == area ]]; then
+        geom=$(slurp -d) || exit 0
+        target=(-g "$geom")
+    else
+        target=(-o "$(niri msg -j focused-output | jq -r .name)")
+    fi
+    local audio=()
+    [[ $2 != gif ]] && audio=(--audio="$(pactl get-default-sink).monitor")
+    setsid wf-recorder "${target[@]}" "${audio[@]}" -f "$out" >"$RUN/rec.log" 2>&1 &
+    printf '%s %s %s %s\n' "$!" "${2:-mp4}" "$(date +%s)" "$out" > "$REC"
+    note -u low "Recording" "Started · run capture again or click the island to stop"
+}
+
+stop() {
+    recording || { note "Recording" "Nothing is being recorded"; return; }
+    local pid kind file
+    read -r pid kind _ file < "$REC"
+    kill -INT "$pid"
+    while kill -0 "$pid" 2>/dev/null; do sleep 0.1; done
+    rm -f "$REC"
+    if [[ $kind == gif ]]; then
+        need ffmpeg
+        local gif=${file%.mp4}.gif
+        note -u low "Recording" "Converting to GIF…"
+        ffmpeg -loglevel error -i "$file" -vf \
+            "fps=15,scale='min(960,iw)':-1:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse" \
+            "$gif" && rm -f "$file" && file=$gif
+    fi
+    printf 'file://%s\n' "$file" | wl-copy --type text/uri-list
+    note -u low "Recording saved" "$file (copied as a file)"
+}
+
+status() {
+    recording || return 1
+    local pid kind start
+    read -r pid kind start _ < "$REC"
+    printf '%s %s\n' "$start" "$kind"
+}
+
+run() {
+    case $1 in
+        area) niri msg action screenshot ;;
+        window) niri msg action screenshot-window ;;
+        screen) niri msg action screenshot-screen ;;
+        edit) edit ;;
+        ocr) ocr ;;
+        color) color ;;
+        rec-area) record area ;;
+        rec-screen) record screen ;;
+        rec-gif) record area gif ;;
+        stop) stop ;;
+        status) status ;;
+        ""|menu) exec "$HUB/panel/panel" capture ;;
+        *) echo "capture: unknown command $1" >&2; exit 2 ;;
+    esac
+}
+
+run "$1"
