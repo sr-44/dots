@@ -82,7 +82,8 @@ button:hover {
 #scratchpad,
 #mpd,
 #mpris,
-#custom-swaync {
+#custom-swaync,
+#custom-sysmon {
     padding: 0 10px;
     color: #cdd6f4;
 }
@@ -103,6 +104,15 @@ button:hover {
 /* Individual modules */
 #custom-separator {
     color: #585b70;
+}
+
+#custom-hub {
+    padding: 0 8px 0 4px;
+    color: #b4befe;
+}
+
+#custom-hub:hover {
+    color: #89b4fa;
 }
 
 #custom-swaync,
@@ -132,6 +142,13 @@ button:hover {
         background-color: #f38ba8;
         color: #1e1e2e;
     }
+}
+
+#custom-sysmon,
+#custom-sysmon.warning,
+#custom-sysmon.critical {
+    background: none;
+    box-shadow: none;
 }
 
 #battery.warning {
