@@ -1,0 +1,167 @@
+window.island-window {
+    background: transparent;
+}
+
+.island {
+    font-family: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+    font-size: 13px;
+    font-weight: bold;
+    color: #cdd6f4;
+    background-color: #11111b;
+    border: 1px solid #313244;
+    border-top: none;
+    border-radius: 0 0 14px 14px;
+    min-width: 0;
+    transition: min-width 220ms cubic-bezier(0.2, 0.9, 0.3, 1.1),
+                border-radius 220ms ease;
+}
+
+.island.expanded {
+    min-width: 400px;
+    border-radius: 0 0 22px 22px;
+}
+
+.compact {
+    min-height: 24px;
+    padding: 0 14px;
+}
+
+.c-art {
+    border-radius: 4px;
+    min-width: 16px;
+    min-height: 16px;
+}
+
+.c-timer {
+    color: #fab387;
+}
+
+.c-timer.flash {
+    color: #11111b;
+    background-color: #fab387;
+    border-radius: 8px;
+    padding: 0 8px;
+}
+
+.c-rec {
+    color: #f38ba8;
+}
+
+.sheet {
+    padding: 4px 16px 16px 16px;
+}
+
+.art {
+    border-radius: 10px;
+    min-width: 76px;
+    min-height: 76px;
+}
+
+.title {
+    font-size: 15px;
+    color: #cdd6f4;
+}
+
+.artist {
+    font-weight: normal;
+    color: #a6adc8;
+}
+
+.time {
+    font-size: 11px;
+    font-weight: normal;
+    color: #6c7086;
+}
+
+.big {
+    font-size: 22px;
+}
+
+.big.rec {
+    color: #f38ba8;
+}
+
+.section {
+    padding-top: 10px;
+    border-top: 1px solid #313244;
+}
+
+.sheet > .section:first-child {
+    border-top: none;
+    padding-top: 0;
+}
+
+button.ctl,
+button.ctl-main,
+button.ctl-text {
+    background: none;
+    border: none;
+    box-shadow: none;
+    color: #cdd6f4;
+    min-height: 28px;
+    min-width: 28px;
+    padding: 0 6px;
+    border-radius: 14px;
+    font-size: 16px;
+}
+
+button.ctl-main {
+    color: #11111b;
+    background-color: #b4befe;
+    min-width: 34px;
+    min-height: 34px;
+    border-radius: 17px;
+    font-size: 18px;
+}
+
+button.ctl-text {
+    font-size: 13px;
+    padding: 0 10px;
+    background-color: #313244;
+}
+
+button.ctl:hover,
+button.ctl-text:hover {
+    background-color: #45475a;
+}
+
+button.ctl-main:hover {
+    background-color: #89b4fa;
+}
+
+scale.progress {
+    padding: 4px 0;
+}
+
+scale.progress trough {
+    min-height: 4px;
+    border-radius: 2px;
+    background-color: #313244;
+}
+
+scale.progress highlight {
+    border-radius: 2px;
+    background-color: #b4befe;
+}
+
+scale.progress slider {
+    min-width: 10px;
+    min-height: 10px;
+    margin: -4px;
+    border-radius: 5px;
+    background-color: #cdd6f4;
+    box-shadow: none;
+    border: none;
+}
+
+progressbar.timer-bar trough {
+    min-height: 4px;
+    border-radius: 2px;
+    background-color: #313244;
+}
+
+progressbar.timer-bar progress {
+    min-height: 4px;
+    border-radius: 2px;
+    background-color: #fab387;
+}
