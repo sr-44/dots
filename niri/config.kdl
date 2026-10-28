@@ -361,6 +361,12 @@ binds {
 
     Mod+O { spawn "slurp"; }
 
+    Mod+X { spawn-sh "~/.config/hub/panel/panel"; }
+    Mod+Shift+A { spawn-sh "~/.config/hub/panel/panel sound"; }
+    Mod+Shift+V { spawn-sh "~/.config/hub/panel/panel clipboard"; }
+    Mod+Shift+S { spawn-sh "~/.config/hub/panel/panel capture"; }
+    Mod+I { spawn-sh "~/.config/hub/island/island toggle"; }
+
     // monitors (interactive setup via rofi)
     Mod+Shift+P { spawn-sh "~/.config/niri/scripts/monitors"; }
     XF86Display { spawn-sh "~/.config/niri/scripts/monitors"; }
