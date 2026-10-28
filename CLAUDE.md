@@ -61,6 +61,23 @@ Hyprland configs live in `~/.config/hypr/` and reference scripts via `~/.config/
     which keeps the frame cost low. When windows cover the wallpaper, niri throttles it to ~1 fps
   - Test params: `still=<s>&pose=ref&png` (deterministic frame as a data URL in `#err`),
     `bench` (frame cost), `dbg[&manual]` (exposes `window.betta`; `manual` steps only via `betta.step(dt)`)
+- **hub/** — utilities behind one waybar icon (󰕮), in the spirit of macOS menu-bar suites; symlink
+  `ln -sf ~/dots/hub ~/.config/hub`. Bindings, startup and the blur layer-rule live in `niri/config.kdl`
+  - `panel/panel` — GTK4 layer-shell drop-down panel (Python), started hidden with `--daemon`;
+    `panel [sound|clipboard|capture|system|timer]` opens a page or closes it. Mod+X, Mod+Shift+A/V/S.
+    Pages: per-app volume sliders up to 150% with output pickers (live via `pactl subscribe`),
+    cliphist history with search, image thumbnails and pins (`~/.local/share/hub/pins`), capture tiles,
+    live charts from `sysmon`, and a timer ring driving the island. A transparent full-screen
+    `hub-backdrop` layer under it closes it on an outside click. Style: `panel/style.css`
+  - `capture` — subcommands for screenshots, OCR (tesseract eng/rus/tgk), colour picker and wf-recorder
+    recording; without one it opens the panel's Capture page. A running recording is in `$XDG_RUNTIME_DIR/hub/rec`
+  - `sysmon` — the waybar `custom/sysmon` module (RAM, CPU, temperature, sparkline tooltip, alerts);
+    the panel imports its `Monitor` (`measure()` gives raw values)
+  - `island/island` — GTK4 layer-shell pill over the middle of waybar, hidden while idle: playing track
+    (Playerctl), timer (`island timer 25m|pause|+5m|stop`, state in `$XDG_RUNTIME_DIR/hub/timer`),
+    running recording, a glimpse of each notification (D-Bus monitor, skipped under swaync DND).
+    Hover or Mod+I expands it; running `island` again turns it off
+  - Needs `cliphist`, `wf-recorder`, `tesseract-data-eng`/`-rus`, `python-cairo` besides grim/slurp/swappy/pactl
 - **gtk/** — GTK 2/3/4 themes + xsettingsd
 - **neofetch/** — fetch config
 - **.zshrc** — zsh with oh-my-zsh, Catppuccin Mocha theme, plugins: git, zsh-syntax-highlighting, tmux, artisan
