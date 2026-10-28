@@ -166,6 +166,11 @@ spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
 spawn-at-startup "sh" "-c" "~/.config/hypr/scripts/wallpaper 11"
 spawn-at-startup "sh" "-c" "~/.config/hypr/scripts/battery-check"
 
+spawn-at-startup "wl-paste" "--type" "text" "--watch" "cliphist" "store"
+spawn-at-startup "wl-paste" "--type" "image" "--watch" "cliphist" "store"
+spawn-at-startup "sh" "-c" "~/.config/hub/panel/panel --daemon"
+spawn-at-startup "sh" "-c" "~/.config/hub/island/island"
+
 
 // WORKSPACES
 workspace "ide" {}
