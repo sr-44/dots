@@ -1,0 +1,1064 @@
+#!/usr/bin/env python3
+"""Hub panel: one drop-down panel for the hub tools, opened from the waybar icon.
+
+Usage: panel [PAGE]      open on PAGE (sound, clipboard, capture, system, timer); closes it
+                         when it is already open on that page, toggles it without PAGE
+       panel --daemon    start hidden, so the first open is instant (niri startup)
+       panel --quit
+
+Pages: per-app volume with live sliders, clipboard history (cliphist) with search and pins,
+screen capture tiles, live system graphs, and a timer that runs in the island.
+Esc or a click outside closes it; Ctrl+Tab / Alt+1..5 switch pages, typing searches the clipboard.
+"""
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import math
+import os
+import re
+import subprocess
+import sys
+import threading
+import time
+from ctypes import CDLL
+
+# gtk4-layer-shell must be loaded before libwayland-client, i.e. before Gtk is imported
+CDLL('libgtk4-layer-shell.so')
+
+import cairo  # noqa: E402
+import gi  # noqa: E402
+
+gi.require_version('Gtk', '4.0')
+gi.require_version('Gdk', '4.0')
+gi.require_version('GdkPixbuf', '2.0')
+gi.require_version('Gtk4LayerShell', '1.0')
+from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk, Pango  # noqa: E402
+from gi.repository import Gtk4LayerShell as LayerShell  # noqa: E402
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+HUB = os.path.dirname(HERE)
+RUN = os.path.join(os.environ.get('XDG_RUNTIME_DIR', '/tmp'), 'hub')
+CAPTURE = os.path.join(HUB, 'capture')
+ISLAND = os.path.join(HUB, 'island', 'island')
+ISLAND_BUS = 'io.github.sr44.Island'
+PINS = os.path.join(os.environ.get('XDG_DATA_HOME', os.path.expanduser('~/.local/share')), 'hub', 'pins')
+THUMBS = os.path.join(os.environ.get('XDG_CACHE_HOME', os.path.expanduser('~/.cache')), 'hub', 'clip')
+
+WIDTH, HEIGHT = 440, 640
+MAX_VOLUME = 150
+CLIP_LIMIT = 200
+
+PAGES = [
+    ('sound', '󰕾', 'Sound'),
+    ('clipboard', '󰅌', 'Clipboard'),
+    ('capture', '󰄀', 'Capture'),
+    ('system', '󰍛', 'System'),
+    ('timer', '󰔛', 'Timer'),
+]
+
+
+def load_sysmon():
+    sys.dont_write_bytecode = True
+    path = os.path.join(HUB, 'sysmon')
+    loader = importlib.machinery.SourceFileLoader('sysmon', path)
+    module = importlib.util.module_from_spec(importlib.util.spec_from_loader('sysmon', loader))
+    loader.exec_module(module)
+    return module
+
+
+sysmon = load_sysmon()
+
+
+def spawn(*cmd):
+    subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+
+
+def output(*cmd, data=None, timeout=3):
+    try:
+        return subprocess.run(cmd, input=data, capture_output=True, timeout=timeout).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return b''
+
+
+def pactl_json(*what):
+    try:
+        return json.loads(output('pactl', '-f', 'json', 'list', *what) or b'[]')
+    except ValueError:
+        return []
+
+
+def clock(seconds):
+    seconds = max(0, int(seconds + 0.5))
+    h, rest = divmod(seconds, 3600)
+    return f'{h}:{rest // 60:02}:{rest % 60:02}' if h else f'{rest // 60}:{rest % 60:02}'
+
+
+def square_texture(pixbuf, size=128):
+    w, h = pixbuf.get_width(), pixbuf.get_height()
+    side = min(w, h)
+    pixbuf = pixbuf.new_subpixbuf((w - side) // 2, (h - side) // 2, side, side)
+    if side > size:
+        pixbuf = pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.BILINEAR)
+    _ok, png = pixbuf.save_to_bufferv('png', [], [])
+    return Gdk.Texture.new_from_bytes(GLib.Bytes.new(png))
+
+
+def label(text='', css=None, xalign=0.0, ellipsize=False, lines=1, **props):
+    widget = Gtk.Label(label=text, xalign=xalign, **props)
+    for c in (css or '').split():
+        widget.add_css_class(c)
+    if ellipsize:
+        widget.set_ellipsize(Pango.EllipsizeMode.END)
+        widget.set_width_chars(1)
+        if lines > 1:
+            widget.set_wrap(True)
+            widget.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+            widget.set_lines(lines)
+    return widget
+
+
+def glyph(text, css=''):
+    return label(text, ('glyph ' + css).strip(), xalign=0.5)
+
+
+def button(child, callback, css='flat', tooltip=None):
+    btn = Gtk.Button()
+    btn.set_child(glyph(child) if isinstance(child, str) else child)
+    for c in css.split():
+        btn.add_css_class(c)
+    btn.set_focusable(False)
+    if tooltip:
+        btn.set_tooltip_text(tooltip)
+    btn.connect('clicked', lambda *_: callback())
+    return btn
+
+
+def box(*children, vertical=False, spacing=0, css=None, **props):
+    widget = Gtk.Box(orientation=Gtk.Orientation.VERTICAL if vertical else Gtk.Orientation.HORIZONTAL,
+                     spacing=spacing, **props)
+    for c in (css or '').split():
+        widget.add_css_class(c)
+    for child in children:
+        if child is not None:
+            widget.append(child)
+    return widget
+
+
+def clear(container):
+    while child := container.get_first_child():
+        container.remove(child)
+
+
+def page_header(title, *extra):
+    return box(label(title, 'page-title'), box(hexpand=True), *extra, css='page-header', spacing=8)
+
+
+def scrolled(child):
+    sw = Gtk.ScrolledWindow(vexpand=True)
+    sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+    sw.set_child(child)
+    return sw
+
+
+class Volume(Gtk.Box):
+    def __init__(self, on_volume, on_mute, glyphs=('󰕾', '󰖁')):
+        super().__init__(spacing=10, css_classes=['volume'])
+        self.on_volume = on_volume
+        self.glyphs = glyphs
+        self.mute = button(glyphs[0], on_mute, 'round mute', 'Mute')
+        self.scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, MAX_VOLUME, 1)
+        self.scale.set_draw_value(False)
+        self.scale.set_hexpand(True)
+        self.scale.set_focusable(False)
+        self.scale.connect('value-changed', self.on_changed)
+        self.readout = label('', 'readout', xalign=1.0)
+        self.readout.set_width_chars(4)
+        self.updating = False
+        self.touched = 0.0
+        self.pending = None
+        for w in (self.mute, self.scale, self.readout):
+            self.append(w)
+
+    def set(self, volume, muted):
+        self.mute.get_child().set_text(self.glyphs[1] if muted else self.glyphs[0])
+        if muted:
+            self.add_css_class('muted')
+        else:
+            self.remove_css_class('muted')
+        if time.monotonic() - self.touched < 0.8:
+            return
+        self.updating = True
+        self.scale.set_value(volume)
+        self.updating = False
+        self.readout.set_text(f'{volume}%')
+        self.scale.set_css_classes(['boost'] if volume > 100 else [])
+
+    def on_changed(self, scale):
+        value = round(scale.get_value())
+        self.readout.set_text(f'{value}%')
+        scale.set_css_classes(['boost'] if value > 100 else [])
+        if self.updating:
+            return
+        self.touched = time.monotonic()
+        if self.pending is None:
+            GLib.timeout_add(40, self.flush)
+        self.pending = value
+
+    def flush(self):
+        self.on_volume(self.pending)
+        self.pending = None
+        return GLib.SOURCE_REMOVE
+
+
+class Picker(Gtk.MenuButton):
+    def __init__(self, on_pick, compact=False):
+        super().__init__(css_classes=['picker'])
+        self.on_pick = on_pick
+        self.text = label('', 'picker-label', ellipsize=True)
+        self.text.set_max_width_chars(22)
+        if compact:
+            self.set_child(glyph('󰓃'))
+            self.set_tooltip_text('Output')
+        else:
+            self.set_child(box(self.text, glyph('󰅀', 'chevron'), spacing=6))
+        self.list = box(vertical=True, spacing=2, css='picker-list')
+        popover = Gtk.Popover(css_classes=['hub-popover'], has_arrow=False)
+        popover.set_child(self.list)
+        self.set_popover(popover)
+
+    def set_items(self, items, current):
+        clear(self.list)
+        for name, title in items:
+            mark = glyph('󰄬' if name == current else '', 'check')
+            row = button(box(mark, label(title, ellipsize=True, hexpand=True), spacing=8),
+                         lambda n=name: self.pick(n), 'menu-row')
+            self.list.append(row)
+            if name == current:
+                self.text.set_text(title)
+
+    def pick(self, name):
+        self.get_popover().popdown()
+        self.on_pick(name)
+
+
+class Page:
+    name = ''
+
+    def __init__(self, app):
+        self.app = app
+        self.visible = False
+
+    def shown(self):
+        self.visible = True
+
+    def hidden(self):
+        self.visible = False
+
+
+def device_title(dev):
+    props = dev.get('properties', {})
+    desc = dev.get('description') or dev.get('name', '?')
+    nick = props.get('node.nick')
+    card = props.get('device.description')
+    if nick and card and desc.startswith(card):
+        return nick
+    return desc
+
+
+def percent(dev):
+    try:
+        return int(next(iter(dev['volume'].values()))['value_percent'].rstrip('%'))
+    except (KeyError, StopIteration, ValueError, AttributeError):
+        return 0
+
+
+class SoundPage(Page):
+    name = 'sound'
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.sinks = []
+        self.streams = {}
+        self.subscribe = None
+        self.refresh_source = 0
+
+        self.out_picker = Picker(lambda n: self.set_default('sink', n))
+        self.out = Volume(lambda v: spawn('pactl', 'set-sink-volume', '@DEFAULT_SINK@', f'{v}%'),
+                          lambda: self.toggle_mute('sink', '@DEFAULT_SINK@'))
+        self.in_picker = Picker(lambda n: self.set_default('source', n))
+        self.mic = Volume(lambda v: spawn('pactl', 'set-source-volume', '@DEFAULT_SOURCE@', f'{v}%'),
+                          lambda: self.toggle_mute('source', '@DEFAULT_SOURCE@'), ('󰍬', '󰍭'))
+
+        self.apps = box(vertical=True, spacing=8)
+        self.empty = box(glyph('󰝟', 'empty-glyph'), label('No apps are playing sound', 'dim', xalign=0.5),
+                         vertical=True, spacing=6, css='empty')
+
+        content = box(
+            page_header('Sound'),
+            box(box(glyph('󰓃', 'section-glyph'), label('Output', 'section'), box(hexpand=True),
+                    self.out_picker, spacing=8),
+                self.out, vertical=True, spacing=10, css='card'),
+            box(box(glyph('󰍬', 'section-glyph'), label('Microphone', 'section'), box(hexpand=True),
+                    self.in_picker, spacing=8),
+                self.mic, vertical=True, spacing=10, css='card'),
+            label('APPS', 'heading'),
+            self.apps,
+            self.empty,
+            vertical=True, spacing=12, css='page')
+        self.widget = scrolled(content)
+
+    def shown(self):
+        super().shown()
+        self.refresh()
+        self.start_subscribe()
+
+    def hidden(self):
+        super().hidden()
+        if self.subscribe:
+            self.subscribe.force_exit()
+            self.subscribe = None
+
+    def start_subscribe(self):
+        if self.subscribe:
+            return
+        try:
+            self.subscribe = Gio.Subprocess.new(['pactl', 'subscribe'], Gio.SubprocessFlags.STDOUT_PIPE)
+        except GLib.Error:
+            return
+        stream = Gio.DataInputStream.new(self.subscribe.get_stdout_pipe())
+        self.read_event(stream, self.subscribe)
+
+    def read_event(self, stream, proc):
+        def done(src, res):
+            try:
+                line, _ = src.read_line_finish_utf8(res)
+            except GLib.Error:
+                return
+            if line is None or proc is not self.subscribe:
+                return
+            if "'remove'" in line or "'new'" in line or "'change'" in line:
+                self.queue_refresh()
+            self.read_event(stream, proc)
+        stream.read_line_async(GLib.PRIORITY_DEFAULT, None, done)
+
+    def queue_refresh(self):
+        if not self.refresh_source:
+            self.refresh_source = GLib.timeout_add(120, self.refresh)
+
+    def refresh(self):
+        self.refresh_source = 0
+        self.sinks = pactl_json('sinks')
+        sources = [s for s in pactl_json('sources')
+                   if s.get('properties', {}).get('device.class') != 'monitor']
+        default_sink = output('pactl', 'get-default-sink').decode().strip()
+        default_source = output('pactl', 'get-default-source').decode().strip()
+
+        for dev in self.sinks:
+            if dev['name'] == default_sink:
+                self.out.set(percent(dev), dev.get('mute', False))
+        for dev in sources:
+            if dev['name'] == default_source:
+                self.mic.set(percent(dev), dev.get('mute', False))
+        self.out_picker.set_items([(d['name'], device_title(d)) for d in self.sinks], default_sink)
+        self.in_picker.set_items([(d['name'], device_title(d)) for d in sources], default_source)
+
+        streams = pactl_json('sink-inputs')
+        indexes = [s['index'] for s in streams]
+        if sorted(indexes) != sorted(self.streams):
+            clear(self.apps)
+            self.streams = {i: self.app_row(i) for i in indexes}
+            for i in indexes:
+                self.apps.append(self.streams[i]['widget'])
+        for s in streams:
+            row = self.streams[s['index']]
+            props = s.get('properties', {})
+            name = props.get('application.name') or props.get('application.process.binary') or 'Unknown'
+            detail = props.get('media.name', '')
+            row['name'].set_text(name)
+            row['detail'].set_text(detail if detail and detail != name else '')
+            row['detail'].set_visible(bool(row['detail'].get_text()))
+            row['icon'].set_from_icon_name(props.get('application.icon_name')
+                                           or props.get('application.process.binary') or 'audio-x-generic')
+            row['volume'].set(percent(s), s.get('mute', False))
+            sink_name = next((d['name'] for d in self.sinks if d['index'] == s.get('sink')), '')
+            row['picker'].set_items([(d['name'], device_title(d)) for d in self.sinks], sink_name)
+        self.empty.set_visible(not streams)
+        return GLib.SOURCE_REMOVE
+
+    def app_row(self, index):
+        icon = Gtk.Image(pixel_size=34, css_classes=['app-icon'])
+        name = label('', 'app-name', ellipsize=True)
+        detail = label('', 'dim small', ellipsize=True)
+        picker = Picker(lambda n: (spawn('pactl', 'move-sink-input', str(index), n), self.queue_refresh()),
+                        compact=True)
+        volume = Volume(lambda v: spawn('pactl', 'set-sink-input-volume', str(index), f'{v}%'),
+                        lambda: (spawn('pactl', 'set-sink-input-mute', str(index), 'toggle'),
+                                 self.queue_refresh()))
+        head = box(icon, box(name, detail, vertical=True, valign=Gtk.Align.CENTER, hexpand=True),
+                   picker, spacing=12)
+        widget = box(head, volume, vertical=True, spacing=8, css='card app')
+        return dict(widget=widget, icon=icon, name=name, detail=detail, volume=volume, picker=picker)
+
+    def toggle_mute(self, kind, target):
+        spawn('pactl', f'set-{kind}-mute', target, 'toggle')
+        self.queue_refresh()
+
+    def set_default(self, kind, name):
+        subprocess.run(['pactl', f'set-default-{kind}', name])
+        if kind == 'sink':
+            for s in pactl_json('sink-inputs'):
+                spawn('pactl', 'move-sink-input', str(s['index']), name)
+        self.queue_refresh()
+
+
+class ClipboardPage(Page):
+    name = 'clipboard'
+
+    def __init__(self, app):
+        super().__init__(app)
+        os.makedirs(PINS, exist_ok=True)
+        os.makedirs(THUMBS, exist_ok=True)
+        self.search = Gtk.SearchEntry(placeholder_text='Search clipboard', hexpand=True)
+        self.search.add_css_class('search')
+        self.search.connect('search-changed', lambda *_: self.list.invalidate_filter())
+        self.search.connect('activate', lambda *_: self.activate_first())
+        self.search.connect('stop-search', lambda *_: app.hide())
+        keys = Gtk.EventControllerKey()
+        keys.connect('key-pressed', self.on_search_key)
+        self.search.add_controller(keys)
+
+        self.wipe = button(box(glyph('󰃢'), label('Clear', 'small'), spacing=6), self.on_wipe,
+                           'pill', 'Clear the history (pins stay)')
+        self.list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.SINGLE, css_classes=['clips'])
+        self.list.set_activate_on_single_click(True)
+        self.list.set_filter_func(self.filter)
+        self.list.connect('row-activated', lambda _l, row: self.copy(row.ref))
+        self.empty = box(glyph('󰅌', 'empty-glyph'), label('Nothing copied yet', 'dim', xalign=0.5),
+                         vertical=True, spacing=6, css='empty')
+        self.hint = label('Enter copies · hover a row to pin or delete', 'hint', xalign=0.5)
+
+        content = box(page_header('Clipboard', self.wipe),
+                      box(self.search, spacing=8),
+                      self.list, self.empty,
+                      vertical=True, spacing=12, css='page')
+        self.widget = box(scrolled(content), self.hint, vertical=True)
+        self.confirm_until = 0
+
+    def shown(self):
+        super().shown()
+        self.search.set_text('')
+        self.load()
+        self.search.grab_focus()
+        self.search.set_key_capture_widget(self.app.panel)
+
+    def hidden(self):
+        super().hidden()
+        self.search.set_key_capture_widget(None)
+
+    def on_search_key(self, _ctl, keyval, _code, _state):
+        if keyval == Gdk.KEY_Down:
+            row = self.first_visible()
+            if row:
+                row.grab_focus()
+            return True
+        return False
+
+    def filter(self, row):
+        query = self.search.get_text().strip().lower()
+        return not query or query in row.text.lower()
+
+    def first_visible(self):
+        row = self.list.get_first_child()
+        while row is not None:
+            if isinstance(row, Gtk.ListBoxRow) and row.get_child_visible():
+                return row
+            row = row.get_next_sibling()
+        return None
+
+    def activate_first(self):
+        row = self.first_visible()
+        if row:
+            self.copy(row.ref)
+
+    def load(self):
+        clear(self.list)
+        entries = []
+        for path in sorted((os.path.join(PINS, f) for f in os.listdir(PINS) if not f.startswith('.')),
+                           key=os.path.getmtime, reverse=True):
+            entries.append(('pin', path))
+        history = output('cliphist', 'list').decode(errors='replace').splitlines()[:CLIP_LIMIT]
+        entries += [('hist', line) for line in history if '\t' in line]
+        todo = []
+        keep = set()
+        for kind, ref in entries:
+            row, image_job = self.make_row(kind, ref)
+            self.list.append(row)
+            if image_job:
+                todo.append(image_job)
+                keep.add(image_job[1])
+        self.empty.set_visible(not entries)
+        if not output('sh', '-c', 'command -v cliphist'):
+            self.empty.get_last_child().set_text('Install cliphist to keep a history')
+        threading.Thread(target=self.load_images, args=(todo, keep), daemon=True).start()
+
+    def make_row(self, kind, ref):
+        pinned = kind == 'pin'
+        image_job = None
+        thumb = Gtk.Image(pixel_size=44, css_classes=['thumb'], overflow=Gtk.Overflow.HIDDEN)
+        if pinned:
+            mime = output('file', '-b', '--mime-type', ref).decode().strip()
+            if mime.startswith('image/'):
+                text, image_job = 'Image', (thumb, ref, None)
+            else:
+                with open(ref, 'rb') as f:
+                    text = f.read(400).decode(errors='replace')
+        else:
+            text = ref.split('\t', 1)[1]
+            m = re.match(r'\[\[ binary data .* (png|jpeg|jpg|webp|gif|bmp) (\d+x\d+) ]]', text)
+            if m:
+                path = os.path.join(THUMBS, ref.split('\t', 1)[0] + '.' + m[1])
+                text, image_job = f'Image · {m[2]}', (thumb, path, ref)
+        text = ' '.join(text.split())
+        is_image = image_job is not None
+        if not is_image:
+            thumb = glyph('󰐃' if pinned else '󰦨', 'clip-glyph')
+        body = label(text, 'clip-text', ellipsize=True, lines=1 if is_image else 2, hexpand=True)
+        pin = button('󰐃' if pinned else '󰤱', lambda: self.pin(ref), 'round action' + (' on' if pinned else ''),
+                     'Unpin' if pinned else 'Pin')
+        delete = button('󰆴', lambda: self.delete(ref), 'round action', 'Delete')
+        content = box(thumb, body, box(pin, delete, spacing=2, css='actions', valign=Gtk.Align.CENTER),
+                      spacing=12, css='clip')
+        row = Gtk.ListBoxRow(child=content)
+        row.add_css_class('clip-row')
+        if pinned:
+            row.add_css_class('pinned')
+        row.ref, row.text = ref, text
+        return row, image_job
+
+    def load_images(self, jobs, keep):
+        for thumb, path, line in jobs:
+            if line and not os.path.exists(path):
+                data = output('cliphist', 'decode', data=(line + '\n').encode())
+                with open(path, 'wb') as f:
+                    f.write(data)
+            try:
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file(path)
+            except GLib.Error:
+                continue
+            GLib.idle_add(lambda t=thumb, p=pixbuf: t.set_from_paintable(square_texture(p)) and False)
+        for name in os.listdir(THUMBS):
+            path = os.path.join(THUMBS, name)
+            if path not in keep:
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
+
+    def data(self, ref):
+        if ref.startswith(PINS):
+            with open(ref, 'rb') as f:
+                return f.read()
+        return output('cliphist', 'decode', data=(ref + '\n').encode())
+
+    def copy(self, ref):
+        data = self.data(ref)
+        try:
+            proc = subprocess.Popen(['wl-copy'], stdin=subprocess.PIPE, start_new_session=True)
+            proc.communicate(data, timeout=3)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        self.app.hide()
+
+    def pin(self, ref):
+        if ref.startswith(PINS):
+            os.remove(ref)
+        else:
+            data = self.data(ref)
+            with open(os.path.join(PINS, hashlib.sha1(data).hexdigest()[:16]), 'wb') as f:
+                f.write(data)
+        self.load()
+
+    def delete(self, ref):
+        if ref.startswith(PINS):
+            os.remove(ref)
+        else:
+            output('cliphist', 'delete', data=(ref + '\n').encode())
+        self.load()
+
+    def on_wipe(self):
+        if time.monotonic() < self.confirm_until:
+            output('cliphist', 'wipe')
+            self.confirm_until = 0
+            self.wipe.remove_css_class('danger')
+            self.wipe.get_child().get_last_child().set_text('Clear')
+            self.load()
+            return
+        self.confirm_until = time.monotonic() + 3
+        self.wipe.add_css_class('danger')
+        self.wipe.get_child().get_last_child().set_text('Sure?')
+
+        def disarm():
+            if time.monotonic() >= self.confirm_until:
+                self.wipe.remove_css_class('danger')
+                self.wipe.get_child().get_last_child().set_text('Clear')
+            return GLib.SOURCE_REMOVE
+        GLib.timeout_add(3100, disarm)
+
+
+class CapturePage(Page):
+    name = 'capture'
+
+    SECTIONS = [
+        ('Screenshot', [('󰩭', 'Area', 'area'), ('󰖯', 'Window', 'window'), ('󰍹', 'Screen', 'screen')]),
+        ('Tools', [('󰏫', 'Annotate', 'edit'), ('󰊄', 'Copy text', 'ocr'), ('󰈊', 'Pick colour', 'color')]),
+        ('Record', [('󰑋', 'Area', 'rec-area'), ('󰕧', 'Screen', 'rec-screen'), ('󰵸', 'GIF', 'rec-gif')]),
+    ]
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.rec_label = label('', 'rec-text', hexpand=True)
+        self.banner = box(glyph('●', 'rec-dot'), self.rec_label,
+                          button(box(glyph('󰓛'), label('Stop', 'small'), spacing=6), self.stop, 'pill danger'),
+                          spacing=10, css='rec-banner')
+        content = box(page_header('Capture'), self.banner, vertical=True, spacing=12, css='page')
+        for title, tiles in self.SECTIONS:
+            grid = Gtk.Grid(column_spacing=10, row_spacing=10, column_homogeneous=True)
+            for i, (g, text, cmd) in enumerate(tiles):
+                tile = button(box(glyph(g, 'tile-glyph'), label(text, 'tile-text', xalign=0.5),
+                                  vertical=True, spacing=8, valign=Gtk.Align.CENTER),
+                              lambda c=cmd: self.run(c), 'tile' + (' rec' if cmd.startswith('rec') else ''))
+                grid.attach(tile, i % 3, i // 3, 1, 1)
+            content.append(label(title.upper(), 'heading'))
+            content.append(grid)
+        self.widget = scrolled(content)
+        self.tick_source = 0
+
+    def recording(self):
+        try:
+            with open(os.path.join(RUN, 'rec')) as f:
+                pid, kind, start = f.read().split()[:3]
+        except (OSError, ValueError):
+            return None
+        return (int(start), kind) if os.path.exists(f'/proc/{pid}') else None
+
+    def shown(self):
+        super().shown()
+        self.tick()
+        if not self.tick_source:
+            self.tick_source = GLib.timeout_add(1000, self.tick)
+
+    def tick(self):
+        rec = self.recording()
+        self.banner.set_visible(rec is not None)
+        if rec:
+            kind = 'GIF' if rec[1] == 'gif' else 'Recording'
+            self.rec_label.set_text(f'{kind} · {clock(time.time() - rec[0])}')
+        if not self.visible:
+            self.tick_source = 0
+            return GLib.SOURCE_REMOVE
+        return GLib.SOURCE_CONTINUE
+
+    def run(self, cmd):
+        self.app.hide()
+        GLib.timeout_add(250, lambda: spawn(CAPTURE, cmd) or False)
+
+    def stop(self):
+        spawn(CAPTURE, 'stop')
+        GLib.timeout_add(600, lambda: self.tick() and False)
+
+
+class Chart(Gtk.DrawingArea):
+    def __init__(self, rgb, series, top=None):
+        super().__init__(content_height=46, hexpand=True)
+        self.rgb = rgb
+        self.series = series
+        self.top = top
+        self.set_draw_func(self.draw)
+
+    def draw(self, _area, cr, w, h):
+        n = sysmon.HISTORY
+        top = self.top or max([max(s, default=0) for s in self.series] + [1]) * 1.15
+        for k, values in enumerate(self.series):
+            pts = list(values)
+            if len(pts) < 2:
+                continue
+            step = w / (n - 1)
+            x0 = w - step * (len(pts) - 1)
+            xy = [(x0 + i * step, h - 2 - (h - 4) * min(v, top) / top) for i, v in enumerate(pts)]
+            cr.move_to(*xy[0])
+            for (xa, ya), (xb, yb) in zip(xy, xy[1:]):
+                mid = (xa + xb) / 2
+                cr.curve_to(mid, ya, mid, yb, xb, yb)
+            r, g, b = self.rgb if k == 0 else (0x94 / 255, 0xe2 / 255, 0xd5 / 255)
+            if k == 0:
+                path = cr.copy_path()
+                cr.line_to(xy[-1][0], h)
+                cr.line_to(xy[0][0], h)
+                cr.close_path()
+                grad = cairo.LinearGradient(0, 0, 0, h)
+                grad.add_color_stop_rgba(0, r, g, b, 0.35)
+                grad.add_color_stop_rgba(1, r, g, b, 0.0)
+                cr.set_source(grad)
+                cr.fill()
+                cr.append_path(path)
+            cr.set_source_rgba(r, g, b, 1)
+            cr.set_line_width(2)
+            cr.stroke()
+
+
+class SystemPage(Page):
+    name = 'system'
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.mon = sysmon.Monitor(alerts=False, procs=False)
+        self.mon.measure()
+        h = self.mon.hist
+        self.cards = {}
+        grid = Gtk.Grid(column_spacing=10, row_spacing=10, column_homogeneous=True)
+        specs = [
+            ('cpu', 'CPU', (0x89, 0xb4, 0xfa), [h['cpu']], 100),
+            ('mem', 'Memory', (0xcb, 0xa6, 0xf7), [h['mem']], 100),
+            ('temp', 'Temperature', (0xfa, 0xb3, 0x87), [h['temp']], 100),
+            ('net', 'Network', (0xa6, 0xe3, 0xa1), [h['rx'], h['tx']], None),
+        ]
+        for i, (key, title, rgb, series, top) in enumerate(specs):
+            value = label('—', 'stat-value')
+            sub = label('', 'dim small', ellipsize=True)
+            chart = Chart(tuple(c / 255 for c in rgb), series, top)
+            card = box(label(title, 'stat-title'), value, sub, chart, vertical=True, spacing=2,
+                       css=f'card stat stat-{key}')
+            grid.attach(card, i % 2, i // 2, 1, 1)
+            self.cards[key] = (value, sub, chart)
+
+        self.procs = box(vertical=True, spacing=8)
+        self.disk = Gtk.ProgressBar(css_classes=['meter'])
+        self.disk_label = label('', 'dim small')
+        self.swap = Gtk.ProgressBar(css_classes=['meter'])
+        self.swap_label = label('', 'dim small')
+        storage = box(box(label('Disk /', 'small', hexpand=True), self.disk_label), self.disk,
+                      box(label('Swap', 'small', hexpand=True), self.swap_label), self.swap,
+                      vertical=True, spacing=6, css='card')
+        btop = button(box(glyph('󰄪'), label('btop', 'small'), spacing=6),
+                      lambda: (app.hide(), spawn('alacritty', '--class', 'btop', '-e', 'btop')), 'pill')
+        content = box(page_header('System', btop), grid,
+                      label('BUSIEST', 'heading'), box(self.procs, css='card'),
+                      storage, vertical=True, spacing=12, css='page')
+        self.widget = scrolled(content)
+        GLib.timeout_add(1000, self.sample)
+
+    def shown(self):
+        super().shown()
+        self.mon.want_procs = True
+        self.mon.processes()
+
+        def first():
+            self.mon.procs = self.mon.processes()
+            return GLib.SOURCE_REMOVE
+        GLib.timeout_add(500, first)
+
+    def hidden(self):
+        super().hidden()
+        self.mon.want_procs = False
+
+    def sample(self):
+        m = self.mon.measure()
+        if not (self.visible and self.app.is_open()):
+            return GLib.SOURCE_CONTINUE
+        size, rate = sysmon.size, sysmon.rate
+        v, s, c = self.cards['cpu']
+        v.set_text(f"{m['cpu']:.0f}%")
+        s.set_text(f"{os.cpu_count()} threads · load {os.getloadavg()[0]:.2f}")
+        v, s, c2 = self.cards['mem']
+        v.set_text(f"{m['mem']:.0f}%")
+        s.set_text(f"{size(m['used'])} of {size(m['total'])}")
+        v, s, c3 = self.cards['temp']
+        v.set_text(f"{m['temp']:.0f}°C" if m['temp'] is not None else '—')
+        s.set_text('CPU package')
+        v, s, c4 = self.cards['net']
+        v.set_text(f"↓ {rate(m['rx'])}")
+        s.set_text(f"↑ {rate(m['tx'])}")
+        for chart in (c, c2, c3, c4):
+            chart.queue_draw()
+        for key, (value, *_r) in self.cards.items():
+            level = {'cpu': m['cpu'], 'mem': m['mem'], 'temp': m['temp'] or 0}.get(key, 0)
+            value.set_css_classes(['stat-value'] + (['crit'] if level >= 90 else ['warn'] if level >= 80 else []))
+
+        clear(self.procs)
+        for pct, name in m['procs'][:6]:
+            bar = Gtk.ProgressBar(css_classes=['meter', 'thin'], fraction=min(pct / 100, 1))
+            self.procs.append(box(box(label(name, 'small', ellipsize=True, hexpand=True),
+                                      label(f'{pct:.1f}%', 'readout small')),
+                                  bar, vertical=True, spacing=4))
+        if not m['procs']:
+            self.procs.append(label('Measuring…', 'dim small'))
+        self.disk.set_fraction(m['disk'] / 100)
+        self.disk_label.set_text(f"{m['disk']:.0f}%")
+        swap_frac = m['swap'] / m['swap_total'] if m['swap_total'] else 0
+        self.swap.set_fraction(swap_frac)
+        self.swap_label.set_text(f"{size(m['swap'])} of {size(m['swap_total'])}" if m['swap_total'] else 'off')
+        return GLib.SOURCE_CONTINUE
+
+
+class Ring(Gtk.DrawingArea):
+    def __init__(self):
+        super().__init__(content_width=176, content_height=176, halign=Gtk.Align.CENTER)
+        self.fraction = 0.0
+        self.paused = False
+        self.set_draw_func(self.draw)
+
+    def draw(self, _area, cr, w, h):
+        r = min(w, h) / 2 - 10
+        cx, cy = w / 2, h / 2
+        cr.set_line_width(10)
+        cr.set_source_rgba(1, 1, 1, 0.07)
+        cr.arc(cx, cy, r, 0, 2 * math.pi)
+        cr.stroke()
+        if self.fraction > 0:
+            cr.set_line_cap(cairo.LINE_CAP_ROUND)
+            if self.paused:
+                cr.set_source_rgba(0xa6 / 255, 0xad / 255, 0xc8 / 255, 1)
+            else:
+                cr.set_source_rgba(0xfa / 255, 0xb3 / 255, 0x87 / 255, 1)
+            start = -math.pi / 2
+            cr.arc(cx, cy, r, start, start + 2 * math.pi * self.fraction)
+            cr.stroke()
+
+
+class TimerPage(Page):
+    name = 'timer'
+    PRESETS = [('5', '5m'), ('10', '10m'), ('25', '25m'), ('50', '50m'), ('60', '1h')]
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.ring = Ring()
+        self.time = label('0:00', 'ring-time', xalign=0.5)
+        self.state = label('Ready', 'dim small', xalign=0.5)
+        center = box(self.time, self.state, vertical=True, valign=Gtk.Align.CENTER, halign=Gtk.Align.CENTER)
+        overlay = Gtk.Overlay(child=self.ring, halign=Gtk.Align.CENTER)
+        overlay.add_overlay(center)
+
+        self.pause = button('󰏤', lambda: self.command('pause'), 'round big', 'Pause / resume')
+        self.controls = box(button(glyph('+5', 'small'), lambda: self.command('+5m'), 'round big', 'Add 5 minutes'),
+                            self.pause,
+                            button('󰓛', lambda: self.command('stop'), 'round big danger', 'Stop'),
+                            spacing=14, halign=Gtk.Align.CENTER)
+
+        chips = box(spacing=8, halign=Gtk.Align.CENTER)
+        for text, arg in self.PRESETS:
+            chips.append(button(box(label(text, 'chip-num', xalign=0.5), label('min', 'chip-unit', xalign=0.5), vertical=True),
+                                lambda a=arg: self.command(a), 'chip'))
+        self.entry = Gtk.Entry(placeholder_text='Custom: 90s, 7m, 1h30m', hexpand=True, css_classes=['field'])
+        self.entry.connect('activate', lambda e: (self.command(e.get_text()), e.set_text('')))
+
+        self.island = Gtk.Switch(valign=Gtk.Align.CENTER)
+        self.island_handler = self.island.connect('state-set', self.on_island)
+        island_row = box(glyph('󰍹', 'section-glyph'),
+                         box(label('Island', 'app-name'),
+                             label('Music, timer and recording above the bar', 'dim small', ellipsize=True),
+                             vertical=True, hexpand=True),
+                         self.island, spacing=12, css='card')
+        Gio.bus_watch_name(Gio.BusType.SESSION, ISLAND_BUS, Gio.BusNameWatcherFlags.NONE,
+                           lambda *_: self.set_island(True), lambda *_: self.set_island(False))
+
+        content = box(page_header('Timer'), overlay, self.controls,
+                      label('START', 'heading'), chips, self.entry,
+                      island_row, vertical=True, spacing=12, css='page')
+        self.widget = scrolled(content)
+        self.tick_source = 0
+
+    def set_island(self, running):
+        self.island.handler_block(self.island_handler)
+        self.island.set_active(running)
+        self.island.set_state(running)
+        self.island.handler_unblock(self.island_handler)
+
+    def on_island(self, _switch, on):
+        spawn(ISLAND)
+        return False
+
+    def command(self, arg):
+        if arg.strip():
+            spawn(ISLAND, 'timer', arg.strip())
+            GLib.timeout_add(400, lambda: self.tick() and False)
+
+    def read(self):
+        try:
+            with open(os.path.join(RUN, 'timer')) as f:
+                left, written, total, paused = f.read().split()
+        except (OSError, ValueError):
+            return None
+        left, total, paused = float(left), float(total), paused == '1'
+        if not paused:
+            left -= time.time() - float(written)
+        return max(0.0, left), total, paused
+
+    def shown(self):
+        super().shown()
+        self.tick()
+        if not self.tick_source:
+            self.tick_source = GLib.timeout_add(250, self.tick)
+
+    def tick(self):
+        t = self.read()
+        if t and t[0] > 0:
+            left, total, paused = t
+            self.time.set_text(clock(left))
+            self.state.set_text('Paused' if paused else f'of {clock(total)}')
+            self.ring.fraction = left / total if total else 0
+            self.ring.paused = paused
+            self.pause.get_child().set_text('󰐊' if paused else '󰏤')
+        else:
+            self.time.set_text('0:00')
+            self.state.set_text('Ready')
+            self.ring.fraction = 0
+        self.controls.set_sensitive(bool(t))
+        self.ring.queue_draw()
+        if not self.visible:
+            self.tick_source = 0
+            return GLib.SOURCE_REMOVE
+        return GLib.SOURCE_CONTINUE
+
+
+class Hub(Gtk.Application):
+    def __init__(self):
+        super().__init__(application_id='io.github.sr44.Hub',
+                         flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
+        self.panel = None
+        self.current = None
+
+    def do_command_line(self, cmdline):
+        args = cmdline.get_arguments()[1:]
+        if args and args[0] in ('-h', '--help'):
+            cmdline.print_literal(__doc__.strip() + '\n')
+            return 0
+        if args == ['--quit']:
+            self.quit()
+            return 0
+        names = [p[0] for p in PAGES]
+        if args and args[0] not in names + ['--daemon']:
+            cmdline.printerr_literal(f'panel: unknown page {args[0]!r} (see --help)\n')
+            return 2
+        self.setup()
+        if args == ['--daemon']:
+            return 0
+        page = args[0] if args else None
+        if self.is_open() and (page is None or page == self.current):
+            self.hide()
+        else:
+            self.show(page or self.current or names[0])
+        return 0
+
+    def setup(self):
+        if self.panel:
+            return
+        self.hold()
+        css = Gtk.CssProvider()
+        css.load_from_path(os.path.join(HERE, 'style.css'))
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_USER)
+
+        self.backdrop = Gtk.Window(application=self, css_classes=['hub-backdrop'])
+        LayerShell.init_for_window(self.backdrop)
+        LayerShell.set_namespace(self.backdrop, 'hub-backdrop')
+        LayerShell.set_layer(self.backdrop, LayerShell.Layer.OVERLAY)
+        for edge in (LayerShell.Edge.TOP, LayerShell.Edge.BOTTOM, LayerShell.Edge.LEFT, LayerShell.Edge.RIGHT):
+            LayerShell.set_anchor(self.backdrop, edge, True)
+        LayerShell.set_exclusive_zone(self.backdrop, -1)
+        click = Gtk.GestureClick(button=0)
+        click.connect('pressed', lambda *_: self.hide())
+        self.backdrop.add_controller(click)
+
+        panel = self.panel = Gtk.Window(application=self, css_classes=['hub-window'])
+        LayerShell.init_for_window(panel)
+        LayerShell.set_namespace(panel, 'hub')
+        LayerShell.set_layer(panel, LayerShell.Layer.OVERLAY)
+        LayerShell.set_anchor(panel, LayerShell.Edge.TOP, True)
+        LayerShell.set_anchor(panel, LayerShell.Edge.LEFT, True)
+        LayerShell.set_margin(panel, LayerShell.Edge.TOP, 8)
+        LayerShell.set_margin(panel, LayerShell.Edge.LEFT, 8)
+        LayerShell.set_keyboard_mode(panel, LayerShell.KeyboardMode.EXCLUSIVE)
+        panel.set_default_size(WIDTH, HEIGHT)
+
+        self.pages = {}
+        self.stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT,
+                               transition_duration=220, vexpand=True)
+        self.tabs = {}
+        tabbar = box(spacing=4, css='tabs', homogeneous=True)
+        group = None
+        for name, g, title in PAGES:
+            page = {'sound': SoundPage, 'clipboard': ClipboardPage, 'capture': CapturePage,
+                    'system': SystemPage, 'timer': TimerPage}[name](self)
+            self.pages[name] = page
+            self.stack.add_named(page.widget, name)
+            tab = Gtk.ToggleButton(css_classes=['tab'], focusable=False, tooltip_text=title)
+            tab.set_child(box(glyph(g, 'tab-glyph'), label(title, 'tab-text', xalign=0.5),
+                              vertical=True, spacing=2))
+            if group:
+                tab.set_group(group)
+            group = group or tab
+            tab.connect('toggled', lambda t, n=name: t.get_active() and self.switch(n))
+            self.tabs[name] = tab
+            tabbar.append(tab)
+
+        root = box(tabbar, self.stack, vertical=True, spacing=0, css='hub')
+        root.set_size_request(WIDTH, HEIGHT)
+        panel.set_child(root)
+
+        keys = Gtk.EventControllerKey()
+        keys.connect('key-pressed', self.on_key)
+        panel.add_controller(keys)
+
+    def on_key(self, _ctl, keyval, _code, state):
+        names = [p[0] for p in PAGES]
+        if keyval == Gdk.KEY_Escape:
+            self.hide()
+            return True
+        if state & Gdk.ModifierType.CONTROL_MASK and keyval in (Gdk.KEY_Tab, Gdk.KEY_ISO_Left_Tab):
+            step = -1 if keyval == Gdk.KEY_ISO_Left_Tab or state & Gdk.ModifierType.SHIFT_MASK else 1
+            self.show(names[(names.index(self.current) + step) % len(names)])
+            return True
+        if state & Gdk.ModifierType.ALT_MASK and Gdk.KEY_1 <= keyval <= Gdk.KEY_5:
+            self.show(names[keyval - Gdk.KEY_1])
+            return True
+        return False
+
+    def is_open(self):
+        return bool(self.panel and self.panel.get_visible())
+
+    def switch(self, name):
+        if name == self.current and self.is_open():
+            return
+        if self.current and self.current != name:
+            self.pages[self.current].hidden()
+        self.current = name
+        self.stack.set_visible_child_name(name)
+        if self.is_open():
+            self.pages[name].shown()
+
+    def show(self, name):
+        if not self.is_open():
+            self.backdrop.set_visible(True)
+            self.panel.set_visible(True)
+            self.panel.add_css_class('opening')
+            GLib.timeout_add(30, lambda: self.panel.remove_css_class('opening') or False)
+            if self.current == name:
+                self.pages[name].shown()
+        self.tabs[name].set_active(True)
+        self.switch(name)
+
+    def hide(self):
+        if not self.is_open():
+            return
+        self.pages[self.current].hidden()
+        self.panel.set_visible(False)
+        self.backdrop.set_visible(False)
+
+
+if __name__ == '__main__':
+    import signal
+    app = Hub()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, lambda *_: app.quit())
+    sys.exit(app.run(sys.argv))
