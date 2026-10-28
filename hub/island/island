@@ -284,10 +284,11 @@ class Island(Gtk.Application):
         for w in (self.c_art, self.c_title, self.c_eq):
             self.c_media.append(w)
 
+        self.c_clock = label('c-clock')
         self.c_timer = label('c-timer')
         self.c_rec = label('c-rec')
 
-        for w in (self.c_notice, self.c_media, self.c_timer, self.c_rec):
+        for w in (self.c_clock, self.c_notice, self.c_media, self.c_timer, self.c_rec):
             box.append(w)
         return box
 
@@ -651,6 +652,7 @@ class Island(Gtk.Application):
         flashing = now < self.flash_until
         notice = now < self.notice_until
 
+        self.c_clock.set_text(time.strftime('%H:%M:%S'))
         self.c_notice.set_visible(notice)
         self.c_media.set_visible(show_media and not notice)
         self.c_timer.set_visible((left is not None or flashing) and not notice)

@@ -32,6 +32,10 @@ window.island-window {
     min-height: 16px;
 }
 
+.c-clock {
+    color: #cdd6f4;
+}
+
 .c-timer {
     color: #fab387;
 }

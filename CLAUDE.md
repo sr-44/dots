@@ -61,7 +61,7 @@ Hyprland configs live in `~/.config/hypr/` and reference scripts via `~/.config/
     which keeps the frame cost low. When windows cover the wallpaper, niri throttles it to ~1 fps
   - Test params: `still=<s>&pose=ref&png` (deterministic frame as a data URL in `#err`),
     `bench` (frame cost), `dbg[&manual]` (exposes `window.betta`; `manual` steps only via `betta.step(dt)`)
-- **hub/** — utilities behind one waybar icon (󰕮), in the spirit of macOS menu-bar suites; symlink
+- **hub/** — utilities opened with Mod+X, in the spirit of macOS menu-bar suites; symlink
   `ln -sf ~/dots/hub ~/.config/hub`. Bindings, startup and the blur layer-rule live in `niri/config.kdl`
   - `panel/panel` — GTK4 layer-shell drop-down panel (Python), started hidden with `--daemon`;
     `panel [sound|clipboard|capture|system|timer]` opens a page or closes it. Mod+X, Mod+Shift+A/V/S.
@@ -76,6 +76,7 @@ Hyprland configs live in `~/.config/hypr/` and reference scripts via `~/.config/
   - `island/island` — GTK4 layer-shell pill over the middle of waybar, hidden while idle: playing track
     (Playerctl), timer (`island timer 25m|pause|+5m|stop`, state in `$XDG_RUNTIME_DIR/hub/timer`),
     running recording, a glimpse of each notification (D-Bus monitor, skipped under swaync DND).
+    The pill also shows the clock, since it covers the waybar one while visible.
     Hover or Mod+I expands it; running `island` again turns it off
   - Needs `cliphist`, `wf-recorder`, `tesseract-data-eng`/`-rus`, `python-cairo` besides grim/slurp/swappy/pactl
 - **gtk/** — GTK 2/3/4 themes + xsettingsd
