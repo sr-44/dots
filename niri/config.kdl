@@ -202,6 +202,13 @@ layer-rule {
 
 // WINDOW RULES
 
+window-rule {
+    match app-id="btop"
+    open-floating true
+    default-column-width { fixed 1100; }
+    default-window-height { fixed 700; }
+}
+
 // ide
 window-rule {
     match app-id="jetbrains-phpstorm"
