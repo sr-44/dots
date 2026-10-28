@@ -185,6 +185,21 @@ workspace "media" {}
 
 prefer-no-csd
 
+layer-rule {
+    match namespace="^hub$"
+    geometry-corner-radius 22
+    shadow {
+        on
+        softness 40
+        spread 2
+        offset x=0 y=8
+        color "#00000080"
+    }
+    background-effect {
+        blur true
+    }
+}
+
 // WINDOW RULES
 
 // ide
