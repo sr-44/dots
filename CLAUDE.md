@@ -71,7 +71,7 @@ Hyprland configs live in `~/.config/hypr/` and reference scripts via `~/.config/
     `hub-backdrop` layer under it closes it on an outside click. Style: `panel/style.css`
   - `capture` — subcommands for screenshots, OCR (tesseract eng/rus/tgk), colour picker and wf-recorder
     recording; without one it opens the panel's Capture page. A running recording is in `$XDG_RUNTIME_DIR/hub/rec`
-  - `sysmon` — the waybar `custom/sysmon` module (RAM, CPU, temperature, sparkline tooltip, alerts);
+  - `sysmon` — the waybar `custom/sysmon` module (RAM, CPU, temperature, sparkline tooltip);
     the panel imports its `Monitor` (`measure()` gives raw values)
   - `island/island` — GTK4 layer-shell pill over the middle of waybar, hidden while idle: playing track
     (Playerctl), timer (`island timer 25m|pause|+5m|stop`, state in `$XDG_RUNTIME_DIR/hub/timer`),

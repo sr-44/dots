@@ -2,20 +2,12 @@
 import json
 import os
 import shutil
-import subprocess
 import sys
 import time
 from collections import deque
 
 HISTORY = 40
 TOP = 5
-
-ALERTS = {
-    'cpu': (90, 70, 30, 'High CPU load', 'CPU above {v:.0f}% for half a minute'),
-    'temp': (90, 80, 10, 'CPU is hot', 'Package at {v:.0f}°C'),
-    'mem': (90, 80, 10, 'Memory pressure', 'RAM {v:.0f}% used'),
-    'disk': (90, 85, 0, 'Disk almost full', '/ is {v:.0f}% full'),
-}
 
 MUTED = '#585b70'
 WARN = '#f9e2af'
@@ -44,8 +36,7 @@ def find_temp_sensor():
 
 
 class Monitor:
-    def __init__(self, alerts=True, procs=True):
-        self.alerts = alerts
+    def __init__(self, procs=True):
         self.want_procs = procs
         self.temp_path = find_temp_sensor()
         self.hist = {k: deque(maxlen=HISTORY) for k in ('cpu', 'mem', 'temp', 'rx', 'tx')}
@@ -55,8 +46,6 @@ class Monitor:
         self.prev_procs_time = time.monotonic()
         self.procs = []
         self.prev_time = time.monotonic()
-        self.since = {}
-        self.fired = set()
         self.disk = 0.0
         self.tick = 0
 
@@ -121,23 +110,6 @@ class Monitor:
         self.prev_procs = now
         return sorted(((v, k) for k, v in busy.items()), reverse=True)[:TOP]
 
-    def alert(self, metric, value):
-        if value is None:
-            return
-        limit, floor, hold, title, body = ALERTS[metric]
-        now = time.monotonic()
-        if value >= limit:
-            self.since.setdefault(metric, now)
-            if metric not in self.fired and now - self.since[metric] >= hold:
-                self.fired.add(metric)
-                subprocess.Popen(['notify-send', '-a', 'sysmon', '-u', 'critical',
-                                  title, body.format(v=value)])
-        elif value < floor:
-            self.since.pop(metric, None)
-            self.fired.discard(metric)
-        else:
-            self.since.pop(metric, None)
-
     def measure(self):
         now = time.monotonic()
         dt, self.prev_time = now - self.prev_time, now
@@ -154,9 +126,6 @@ class Monitor:
 
         for key, val in (('cpu', cpu), ('mem', mem), ('temp', temp), ('rx', rx), ('tx', tx)):
             self.hist[key].append(val or 0)
-        if self.alerts:
-            for key, val in (('cpu', cpu), ('mem', mem), ('temp', temp), ('disk', self.disk)):
-                self.alert(key, val)
         return dict(cpu=cpu, mem=mem, used=used, total=total, swap=swap, swap_total=swap_total,
                     temp=temp, rx=rx, tx=tx, disk=self.disk, procs=self.procs)
 

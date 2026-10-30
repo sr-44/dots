@@ -712,7 +712,7 @@ class SystemPage(Page):
 
     def __init__(self, app):
         super().__init__(app)
-        self.mon = sysmon.Monitor(alerts=False, procs=False)
+        self.mon = sysmon.Monitor(procs=False)
         self.mon.measure()
         h = self.mon.hist
         self.cards = {}
