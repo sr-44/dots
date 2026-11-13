@@ -36,8 +36,13 @@ button:hover {
 }
 
 /* Workspaces */
-#workspaces button {
+/* Since waybar 0.16 the button holds box > [label, taskbar], packed without
+   expand, so a min-width on the button pushes the icon left; size the label */
+#workspaces button label {
     min-width: 24px;
+}
+
+#workspaces button {
     padding: 0 9px;
     background-color: transparent;
     color: #7f849c;
